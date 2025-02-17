@@ -4,9 +4,235 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SSLSIRLICS</title>
+    <link rel="icon" href="rsc/icons/favicon.ico" />
+    <link rel="stylesheet" href="rsc/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="rsc/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="rsc/fontawesome/css/all.min.css" />
+    <script src="rsc/leaflet/leaflet.js"></script>
+    <script src="rsc/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Prevent scrollbars */
+      }
+      #map {
+        width: 100%;
+        height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      #sidebar {
+        height: 100vh;
+        width: 300px;
+        position: fixed;
+        top: 0;
+        left: -300px;
+        background-color: #f8f9fa;
+        transition: 0.3s;
+        z-index: 1000;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      #sidebar.active {
+        left: 0;
+      }
+      #toggle-btn {
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1001;
+        background: white;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        border-radius: 0 4px 4px 0; /* Round only right corners */
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      #toggle-btn.active {
+        left: 300px;
+      }
+
+      #toggle-btn:hover {
+        background-color: #f8f9fa;
+      }
+
+      .list-group-item {
+        border-left: none;
+        border-right: none;
+        padding: 12px 15px;
+        transition: all 0.2s;
+      }
+
+      .list-group-item:hover {
+        background-color: #e9ecef;
+        transform: translateX(5px);
+      }
+
+      .custom-popup .leaflet-popup-close-button {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        font-size: 18px;
+        color: #666;
+        border: none;
+        background: none;
+        transition: all 0.2s;
+        text-decoration: none;
+        font-weight: bold;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .custom-popup .leaflet-popup-close-button:hover {
+        color: #333;
+        transform: scale(1.2);
+        background: none;
+      }
+
+      .custom-popup .leaflet-popup-content-wrapper {
+        padding: 5px;
+        border-radius: 8px;
+      }
+    </style>
   </head>
   <body>
-    <h1>SSLSIRLICS</h1>
-    <p>Hello World!</p>
+    <button id="toggle-btn" class="btn">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+    <div id="sidebar" class="bg-light">
+      <div class="d-flex align-items-center mb-4">
+        <i class="fas fa-lightbulb text-warning me-2 fs-4"></i>
+        <h2 class="h4 mb-0">SSLSIRLICS Streetlights Summary</h2>
+      </div>
+      <div class="list-group shadow-sm">
+        <a href="#" class="list-group-item list-group-item-action border-0">
+          <i class="fas fa-map-marker-alt me-2"></i>
+          Ampayon
+        </a>
+        <a href="#" class="list-group-item list-group-item-action border-0">
+          <i class="fas fa-map-marker-alt me-2"></i>
+          Butuan City
+        </a>
+        <a href="#" class="list-group-item list-group-item-action border-0">
+          <i class="fas fa-map-marker-alt me-2"></i>
+          Other Location
+        </a>
+      </div>
+      <div class="mt-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Statistics</h5>
+            <p class="card-text">Total Streetlights: 150</p>
+            <p class="card-text">
+              Active: <span class="text-success">142</span>
+            </p>
+            <p class="card-text">
+              Inactive: <span class="text-danger">8</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="map"></div>
+    <script>
+      // Update the map initialization
+      const map = L.map("map", {
+        zoomControl: false,
+      }).setView([9.215937, 125.981771], 9);
+
+      L.control
+        .zoom({
+          position: "topright",
+        })
+        .addTo(map);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://github.com/AlienWolfX" target="_blank" >Allen Cruiz</a>',
+      }).addTo(map);
+
+      // Define marker locations
+      const locations = [
+        {
+          name: "Ampayon",
+          coords: [8.956533, 125.597094],
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [10, 20],
+          }),
+        },
+        {
+          name: "Butuan City",
+          coords: [8.946257, 125.5234514],
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [10, 20],
+          }),
+        },
+      ];
+
+      locations.forEach((loc) => {
+        L.marker(loc.coords, { icon: loc.icon })
+          .addTo(map)
+          .bindPopup(
+            `<div class="p-2">
+              <h6 class="fw-bold mb-1">${loc.name}</h6>
+              <small class="text-muted">Click for details</small>
+             </div>`,
+            {
+              className: "custom-popup",
+              closeButton: true,
+              closeOnClick: false,
+            }
+          )
+          .on("click", function (e) {
+            map.flyTo(e.latlng, 15, {
+              duration: 1,
+              easeLinearity: 0.15,
+              animate: true,
+              noMoveStart: true,
+              fps: 60,
+            });
+          });
+      });
+
+      // Animation
+      map.on("popupclose", function () {
+        map.flyTo([8.956533, 125.597094], 8, {
+          duration: 1,
+          easeLinearity: 0.15,
+          animate: true,
+          noMoveStart: true,
+          fps: 60,
+        });
+      });
+
+      // Sidebar toggle
+      const toggleBtn = document.getElementById("toggle-btn");
+      const sidebar = document.getElementById("sidebar");
+      const mapDiv = document.getElementById("map");
+
+      toggleBtn.addEventListener("click", () => {
+        sidebar.classList.toggle("active");
+        toggleBtn.classList.toggle("active");
+        toggleBtn.innerHTML = toggleBtn.classList.contains("active")
+          ? '<i class="fas fa-chevron-left"></i>'
+          : '<i class="fas fa-chevron-right"></i>';
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 300);
+      });
+    </script>
   </body>
 </html>
