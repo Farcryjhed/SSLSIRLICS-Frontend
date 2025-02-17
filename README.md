@@ -2,5 +2,5 @@
 
 ## A frontend for SSLSIRLICS
 
-> [!WARNING]
+> [!NOTE]
 > Gipang ignore usa nako ang uban files kay 2k+
