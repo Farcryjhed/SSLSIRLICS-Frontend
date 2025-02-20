@@ -1,5 +1,1 @@
-# Gipang Ignore usa nako ang uban nga files
-
-rsc/fontawesome/*
-rsc/bootstrap/*
-rsc/leaflet/*
+.env
