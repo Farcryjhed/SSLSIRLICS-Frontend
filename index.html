@@ -141,97 +141,26 @@
       </div>
     </div>
     <div id="map"></div>
+    <script src="rsc/js/streetlights.js"></script>
     <script>
-      // Update the map initialization
-      const map = L.map("map", {
-        zoomControl: false,
-      }).setView([9.215937, 125.981771], 9);
+      let map;
+      document.addEventListener("DOMContentLoaded", () => {
+        map = new StreetlightMap();
 
-      L.control
-        .zoom({
-          position: "topright",
-        })
-        .addTo(map);
+        // Sidebar toggle functionality
+        const toggleBtn = document.getElementById("toggle-btn");
+        const sidebar = document.getElementById("sidebar");
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://github.com/AlienWolfX" target="_blank" >Allen Cruiz</a>',
-      }).addTo(map);
-
-      // Define marker locations
-      const locations = [
-        {
-          name: "Ampayon",
-          coords: [8.956533, 125.597094],
-          icon: L.divIcon({
-            className: "custom-marker",
-            html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
-            iconSize: [30, 30],
-            iconAnchor: [10, 20],
-          }),
-        },
-        {
-          name: "Butuan City",
-          coords: [8.946257, 125.5234514],
-          icon: L.divIcon({
-            className: "custom-marker",
-            html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
-            iconSize: [30, 30],
-            iconAnchor: [10, 20],
-          }),
-        },
-      ];
-
-      locations.forEach((loc) => {
-        L.marker(loc.coords, { icon: loc.icon })
-          .addTo(map)
-          .bindPopup(
-            `<div class="p-2">
-              <h6 class="fw-bold mb-1">${loc.name}</h6>
-              <small class="text-muted">Click for details</small>
-             </div>`,
-            {
-              className: "custom-popup",
-              closeButton: true,
-              closeOnClick: false,
-            }
-          )
-          .on("click", function (e) {
-            map.flyTo(e.latlng, 15, {
-              duration: 1,
-              easeLinearity: 0.15,
-              animate: true,
-              noMoveStart: true,
-              fps: 60,
-            });
-          });
-      });
-
-      // Animation
-      map.on("popupclose", function () {
-        map.flyTo([8.956533, 125.597094], 8, {
-          duration: 1,
-          easeLinearity: 0.15,
-          animate: true,
-          noMoveStart: true,
-          fps: 60,
+        toggleBtn.addEventListener("click", () => {
+          sidebar.classList.toggle("active");
+          toggleBtn.classList.toggle("active");
+          toggleBtn.innerHTML = toggleBtn.classList.contains("active")
+            ? '<i class="fas fa-chevron-left"></i>'
+            : '<i class="fas fa-chevron-right"></i>';
+          setTimeout(() => {
+            map.map.invalidateSize();
+          }, 300);
         });
-      });
-
-      // Sidebar toggle
-      const toggleBtn = document.getElementById("toggle-btn");
-      const sidebar = document.getElementById("sidebar");
-      const mapDiv = document.getElementById("map");
-
-      toggleBtn.addEventListener("click", () => {
-        sidebar.classList.toggle("active");
-        toggleBtn.classList.toggle("active");
-        toggleBtn.innerHTML = toggleBtn.classList.contains("active")
-          ? '<i class="fas fa-chevron-left"></i>'
-          : '<i class="fas fa-chevron-right"></i>';
-        setTimeout(() => {
-          map.invalidateSize();
-        }, 300);
       });
     </script>
   </body>
