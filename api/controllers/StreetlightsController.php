@@ -32,5 +32,49 @@ class StreetlightController {
             return array("status" => "error", "message" => $e->getMessage());
         }
     }
+
+    public function getMunicipalityStreetlights($municipality) {
+        try {
+            $query = "SELECT * FROM streetdata1 
+                      WHERE SOCID LIKE CONCAT(?, '%') 
+                      ORDER BY DATE DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([$municipality]);
+            
+            $result = array();
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $result[] = array(
+                    "socid" => $row['SOCID'],
+                    "bulbv" => floatval($row['BULBV']),
+                    "curv" => floatval($row['CURV']),
+                    "solv" => floatval($row['SOLV']),
+                    "solc" => floatval($row['SOLC']),
+                    "batv" => floatval($row['BATV']),
+                    "batc" => floatval($row['BATC']),
+                    "batsoc" => floatval($row['BATSOC']),
+                    "date" => $row['DATE']
+                );
+            }
+            
+            if (empty($result)) {
+                return array(
+                    "status" => "error",
+                    "message" => "$municipality not found"
+                );
+            }
+            
+            return array(
+                "status" => "success", 
+                "data" => $result,
+                "count" => count($result),
+                "municipality" => $municipality
+            );
+        } catch(PDOException $e) {
+            return array(
+                "status" => "error", 
+                "message" => $e->getMessage()
+            );
+        }
+    }
 }
 ?>
