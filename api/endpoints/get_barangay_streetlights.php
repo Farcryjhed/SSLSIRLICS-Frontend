@@ -9,7 +9,6 @@ $database = new Database();
 $db = $database->getConnection();
 $controller = new StreetlightController($db);
 
-// Get parameters from URL
 $municipality = isset($_GET['municipality']) ? $_GET['municipality'] : '';
 $barangay = isset($_GET['barangay']) ? $_GET['barangay'] : '';
 
