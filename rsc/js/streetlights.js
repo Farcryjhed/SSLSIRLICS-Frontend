@@ -14,7 +14,31 @@ class StreetlightMap {
     this.cityMarkers = new L.LayerGroup().addTo(this.map);
     this.municipalityMarkers = new L.LayerGroup().addTo(this.map);
     this.streetlightMarkers = new L.LayerGroup().addTo(this.map);
+    this.polygonLayer = new L.LayerGroup().addTo(this.map); // Layer for polygons
 
+// Steps to Display Coordinates on Hover -//
+// Event listener for mouse movement to update coordinates
+this.map.on("mousemove", (e) => {
+  const coordinatesText = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`;
+  document.getElementById("coordinates").innerText = coordinatesText;
+});
+
+// Function to copy coordinates when pressing Ctrl + C
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey && event.key === "c") {
+    const coordinatesText = document.getElementById("coordinates").innerText;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(coordinatesText).then(() => {
+
+    }).catch(err => {
+      console.error("Failed to copy: ", err);
+    });
+  }
+});
+
+//-//
+    
     // Add zoom end event listener
     this.map.on("zoomend", () => this.handleZoom());
 
@@ -91,13 +115,14 @@ class StreetlightMap {
 
     // Add province coordinates
     this.provinceCoords = {
-      BTU: { lat: 8.955, lng: 125.533, name: "Butuan City" },
-      SUR: { lat: 9.787, lng: 125.49, name: "Surigao City" },
+      BTU: { lat: 8.955, lng: 125.533, name: "Agusan del Norte" },
+      SUR: { lat: 9.787, lng: 125.49, name: "Surigao del Norte" },
     };
 
     this.setupMap();
     this.markers = new L.LayerGroup().addTo(this.map);
     this.loadProvinces(); // Change initial load to provinces
+   
 
     // Add zoom levels configuration
     this.zoomLevels = {
@@ -155,7 +180,7 @@ class StreetlightMap {
         this.clearMarkers();
 
         // Reset zoom to overview level
-        this.map.flyTo([9.215937, 125.981771], 9, {
+        this.map.flyTo([9.215937, 125.981771], 8.50, {
           duration: 1.5,
           easeLinearity: 0.25,
         });
@@ -205,7 +230,7 @@ class StreetlightMap {
         this.clearMarkers();
 
         // Reset zoom to city level when showing all municipalities
-        this.map.flyTo([9.215937, 125.981771], this.zoomLevels.city, {
+        this.map.flyTo([8.948579436350215, 125.5344506232552], this.zoomLevels.city, {
           duration: 1.5,
           easeLinearity: 0.25,
         });
@@ -290,7 +315,7 @@ class StreetlightMap {
           }
         });
 
-        // Add markers for each barangay
+        // Add markers for each barangay (color red)
         Object.values(groupedByBarangay).forEach((barangay) => {
           if (barangay.lat && barangay.lng) {
             // Create a marker for the barangay center
@@ -299,7 +324,7 @@ class StreetlightMap {
                 className: "custom-marker",
                 html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
                 iconSize: [30, 30],
-                iconAnchor: [15, 30],
+                iconAnchor: [12, 30],
               }),
             });
 
@@ -316,27 +341,6 @@ class StreetlightMap {
 
             this.streetlightMarkers.addLayer(barangayMarker);
 
-            // Add individual streetlight markers around the barangay center
-            barangay.streetlights.forEach((streetlight, index) => {
-              // Create a small random offset for each streetlight
-              const offset = this.getRandomOffset(0.0002); // About 20 meters
-              const streetlightMarker = L.marker(
-                [barangay.lat + offset.lat, barangay.lng + offset.lng],
-                {
-                  icon: L.divIcon({
-                    className: "custom-marker",
-                    html: '<i class="fas fa-lightbulb text-warning fa-lg"></i>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20],
-                  }),
-                }
-              );
-
-              streetlightMarker.bindPopup(
-                this.createStreetlightPopup(streetlight)
-              );
-              this.streetlightMarkers.addLayer(streetlightMarker);
-            });
           }
         });
 
@@ -359,13 +363,13 @@ class StreetlightMap {
       console.error("Invalid coordinates for province:", province);
       return;
     }
-
+    // province duha ka building
     const marker = L.marker([province.lat, province.lng], {
       icon: L.divIcon({
         className: "custom-marker",
         html: '<i class="fas fa-building text-primary fa-3x"></i>',
         iconSize: [40, 40],
-        iconAnchor: [20, 40],
+        iconAnchor: [13, 40],
       }),
     });
 
@@ -385,13 +389,13 @@ class StreetlightMap {
       console.error("Invalid coordinates for municipality:", municipality);
       return;
     }
-
+    // municipality tulo ka
     const marker = L.marker([municipality.lat, municipality.lng], {
       icon: L.divIcon({
         className: "custom-marker",
-        html: '<i class="fas fa-city text-primary fa-2x"></i>',
+        html: '<i class="fas fa-city text-primary fa-3x"></i>',
         iconSize: [30, 30],
-        iconAnchor: [15, 30],
+        iconAnchor: [17, 34],
       }),
     });
 
@@ -520,28 +524,31 @@ class StreetlightMap {
         <strong>Status:</strong> ${this.getStatusBadge(streetlight)}
       </div>
       <div class="mb-2">
-        <strong>Battery:</strong> ${streetlight.batsoc}%
+        <strong>Battery:</strong> ${streetlight.batsoc}% 
       </div>
       <div class="mb-2">
         <strong>Last Updated:</strong><br>
         ${new Date(streetlight.date).toLocaleString()}
       </div>
-      <button class="btn btn-sm btn-secondary mt-2 back-to-municipality">Back to Municipality</button>
+      <div class="d-flex justify-content-center">
+        <button class="btn btn-sm btn-secondary mt-2 moredetails">More Details</button>
+      </div>
     `;
 
-    // Add click handler after popup is created
+    // Add event listener for "More Details" button
     setTimeout(() => {
-      const backButton = container.querySelector(".back-to-municipality");
-      if (backButton) {
-        L.DomEvent.on(backButton, "click", (e) => {
+      const moreDetailsButton = container.querySelector(".moredetails");
+      if (moreDetailsButton) {
+        L.DomEvent.on(moreDetailsButton, "click", (e) => {
           L.DomEvent.stopPropagation(e);
-          this.loadMunicipalities(streetlight.code.split("-")[0]);
+          this.showMoreDetailsPopup(streetlight); // Open the full-screen popup
         });
       }
     }, 0);
 
     return container;
-  }
+}
+
 
   getStatusBadge(barangay) {
     const status = barangay.batsoc > 20 ? "Active" : "Low Battery";
@@ -579,4 +586,71 @@ class StreetlightMap {
       </div>
     `;
   }
+
+
+//-----------------------------------More-Details-Pop-Up----------------------------------/
+showMoreDetailsPopup(streetlight) {
+  // Remove any existing popups to avoid duplication
+  const existingPopup = document.querySelector(".full-screen-popup");
+  if (existingPopup) {
+    document.body.removeChild(existingPopup);
+  }
+
+  // Create the full-screen popup container
+  const popupContainer = document.createElement("div");
+  popupContainer.className = "full-screen-popup d-flex align-items-center justify-content-center position-fixed top-0 start-0 w-100 h-100 bg-white";
+  popupContainer.style.zIndex = "1050"; // Ensure it appears on top
+  popupContainer.style.overflowY = "auto";
+
+  // Add the content inside the popup
+  popupContainer.innerHTML = `
+    <div class="popup-content ;">
+      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
+      <div class="mb-2"><strong>Streetlight ID:</strong> ${streetlight.code}</div>
+      <div class="mb-2"><strong>Status:</strong> ${this.getStatusBadge(streetlight)}</div>
+      <div class="mb-2"><strong>Battery:</strong> ${streetlight.batsoc}%</div>
+      <div class="mb-2"><strong>Last Updated:</strong> ${new Date(streetlight.date).toLocaleString()}</div>
+      <div class="mb-2"><strong>Location:</strong> ${streetlight.lat}, ${streetlight.lng}</div>
+      <div class="mb-2"><strong>Installation Date:</strong> ${new Date(streetlight.installationDate).toLocaleDateString()}</div>
+      <div class="text-center mt-4">
+        <button class="btn btn-danger close-popup">Close</button>
+      </div>
+    </div>
+  `;
+
+  // Append to body
+  document.body.appendChild(popupContainer);
+
+  // Add event listener for closing the popup
+  setTimeout(() => {
+    const closeButton = popupContainer.querySelector(".close-popup");
+    if (closeButton) {
+      closeButton.addEventListener("click", () => {
+        document.body.removeChild(popupContainer);
+      });
+    }
+  }, 0);
 }
+
+
+  
+//-----------------------------------Polygon-----------------------------------/
+//edited or kanang gi add nako kay naay -// sa comments //
+
+//pending last be edited because it is not too important
+
+// Steps to Display Coordinates on Hover that can easily copy the coordinates-//
+
+//-//
+
+
+
+
+}
+
+
+
+
+
+
+

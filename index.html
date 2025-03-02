@@ -67,7 +67,7 @@
         border-left: none;
         border-right: none;
         padding: 12px 15px;
-        transition: all 0.2s;
+        transition: all 0.3s;
       }
 
       .list-group-item:hover {
@@ -83,7 +83,7 @@
         color: #666;
         border: none;
         background: none;
-        transition: all 0.2s;
+        transition: all 0.3s;
         text-decoration: none;
         font-weight: bold;
         padding: 0;
@@ -100,30 +100,93 @@
         padding: 5px;
         border-radius: 8px;
       }
+
+      #sidebar, #navbar, #toggle-btn {
+        transition: left 0.3s ease-in-out;
+      }
+      .search-box {
+                display: flex;
+                align-items: center;
+                background-color: #fff;
+                border-radius: 50px;
+                padding: 0px 20px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+                width: 350px; /* Adjusted from 3300px */
+                height: 50px;
+                transition: left 0.3s ease-in-out;
+            }
+    
+            .search-box input {
+                border: none;
+                background: none;
+                outline: none;
+                width: 100%;
+                font-size: 18px;
+                color: #333;
+                
+            }
+    
+            .search-box i {
+                cursor: pointer;
+                transition: color 0.3s ease;
+            }
+    
+            .search-box i:hover {
+                color: orangered;
+            }
+
+            h5.list-group-item {
+              pointer-events: none; /* Prevents any interaction */
+              color: #212529!important; /* Matches Bootstrap's default text color */
+            }
     </style>
   </head>
   <body>
-    <button id="toggle-btn" class="btn">
-      <i class="fas fa-chevron-right"></i>
-    </button>
+    <nav class="navbar navbar-light" id="navbar" style=" z-index: 1050; width: 40%; border-radius: 30px;">
+      <div class="container-fluid">
+        <button id="toggle-btn" class="btn">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <form class="d-flex" id="search" role="search" style="visibility: visible; opacity: 1; display: flex !important; position: relative; width: 100%;">
+          <div class="search-box" style="width: 100%;">
+            <input class="form-control border-0 shadow-none" type="text" placeholder="Search..." aria-label="Search" 
+                   style="border-radius: 20px; padding: 10px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2);">
+                   <i class="fas fa-search fs-5"></i>
+            </span>         
+          </div>
+        </form>
+      </div>
+    </nav>
+    
+<!-- This is the new added in HTML -->
+  <div id="coordinates" style="
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: white;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 14px;
+      z-index: 1000;">
+      Move cursor to see coordinates
+    </div>
+
+<!-- This is the new added in HTML -->
+
     <div id="sidebar" class="bg-light">
       <div class="d-flex align-items-center mb-4">
         <i class="fas fa-lightbulb text-warning me-2 fs-4"></i>
         <h2 class="h4 mb-0">SSLSIRLICS Streetlights Summary</h2>
       </div>
       <div class="list-group shadow-sm">
-        <a href="#" class="list-group-item list-group-item-action border-0">
-          <i class="fas fa-map-marker-alt me-2"></i>
-          Ampayon
-        </a>
-        <a href="#" class="list-group-item list-group-item-action border-0">
+
+        <h5 class="card-title list-group-item border-0 m-0">Location</h5>
+        <a href="#" class="list-group-item list-group-item-action border-0 m-0">
           <i class="fas fa-map-marker-alt me-2"></i>
           Butuan City
         </a>
-        <a href="#" class="list-group-item list-group-item-action border-0">
-          <i class="fas fa-map-marker-alt me-2"></i>
-          Other Location
-        </a>
+        
+  
       </div>
       <div class="mt-4">
         <div class="card shadow-sm">
@@ -141,22 +204,29 @@
       </div>
     </div>
     <div id="map"></div>
+
     <script src="rsc/js/streetlights.js"></script>
     <script>
       let map;
       document.addEventListener("DOMContentLoaded", () => {
         map = new StreetlightMap();
-
-        // Sidebar toggle functionality
+        
         const toggleBtn = document.getElementById("toggle-btn");
         const sidebar = document.getElementById("sidebar");
-
+        const navbar = document.getElementById("navbar");
+        
         toggleBtn.addEventListener("click", () => {
-          sidebar.classList.toggle("active");
-          toggleBtn.classList.toggle("active");
-          toggleBtn.innerHTML = toggleBtn.classList.contains("active")
-            ? '<i class="fas fa-chevron-left"></i>'
-            : '<i class="fas fa-chevron-right"></i>';
+          if (sidebar.style.left === "0px") {
+            sidebar.style.left = "-300px";
+            navbar.style.left = "0px";
+            toggleBtn.style.left = "0px";
+            toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+          } else {
+            sidebar.style.left = "0px";
+            navbar.style.left = "300px";
+            toggleBtn.style.left = "300px";
+            toggleBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+          }
           setTimeout(() => {
             map.map.invalidateSize();
           }, 300);
@@ -164,4 +234,5 @@
       });
     </script>
   </body>
+  
 </html>
