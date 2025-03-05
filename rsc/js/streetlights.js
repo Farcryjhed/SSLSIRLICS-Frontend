@@ -14,9 +14,51 @@ class StreetlightMap {
     this.cityMarkers = new L.LayerGroup().addTo(this.map);
     this.municipalityMarkers = new L.LayerGroup().addTo(this.map);
     this.streetlightMarkers = new L.LayerGroup().addTo(this.map);
+    this.polygonLayer = new L.LayerGroup().addTo(this.map); // Layer for polygons
 
+// Steps to Display Coordinates on Hover -//
+// Event listener for mouse movement to update coordinates
+this.map.on("mousemove", (e) => {
+  const coordinatesText = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`;
+  document.getElementById("coordinates").innerText = coordinatesText;
+});
+
+// Function to copy coordinates when pressing Ctrl + C
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey && event.key === "c") {
+    const coordinatesText = document.getElementById("coordinates").innerText;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(coordinatesText).then(() => {
+
+    }).catch(err => {
+      console.error("Failed to copy: ", err);
+    });
+  }
+});
+
+//-//
+    
     // Add zoom end event listener
     this.map.on("zoomend", () => this.handleZoom());
+
+    // Butuan City Barangays in Database -//
+    this.BTUbarangayCoords = {
+      "BTU-LIB": { lat: 8.945, lng: 125.528, name: "Libertad" },
+      "BTU-DBF": { lat: 8.952, lng: 125.532, name: "Doongan Baan Ferry" },
+      "BTU-BAN": { lat: 8.958, lng: 125.535, name: "Baan" },
+      "BTU-BON": { lat: 8.963, lng: 125.538, name: "Boning" },
+    }
+    //end Butuan Barangays in Database -//
+
+    // Surigao City Barangays in Database -//
+    this.SURbarangayCoords = {
+      "SUR-LUN": { lat: 9.782, lng: 125.485, name: "Luna" },
+      "SUR-WAW": { lat: 9.788, lng: 125.488, name: "Washington" },
+      "SUR-TIN": { lat: 9.792, lng: 125.492, name: "Tinio" },
+      "SUR-CAN": { lat: 9.795, lng: 125.495, name: "Canlanipa" },
+    }
+    //end Surigao Barangays in Database -//
 
     // Random coordinates within Butuan and Surigao areas
     this.barangayCoords = {
@@ -30,14 +72,16 @@ class StreetlightMap {
       "SUR-LUN": { lat: 9.782, lng: 125.485, name: "Luna" },
       "SUR-WAW": { lat: 9.788, lng: 125.488, name: "Washington" },
       "SUR-TIN": { lat: 9.792, lng: 125.492, name: "Tinio" },
-      "SUR-CAN": { lat: 9.795, lng: 125.495, name: "Canlanipa" },
+      "SUR-CAN": { lat: 9.783949593493343, lng: 125.49870493222036, name: "Canlanipa" },
     };
 
+  
     // Municipality centers
     this.municipalityCoords = {
       BTU: { lat: 8.955, lng: 125.533, name: "Butuan City" },
-      SUR: { lat: 9.787, lng: 125.49, name: "Surigao City" },
+      SUR: { lat: 9.797, lng: 125.489, name: "Surigao City" },
     };
+
 
     // Create coordinate ranges for each barangay
     this.barangayRanges = {
@@ -78,11 +122,12 @@ class StreetlightMap {
         name: "Tinio",
       },
       "SUR-CAN": {
-        lat: { min: 9.794, max: 9.796 },
-        lng: { min: 125.494, max: 125.496 },
+        lat: { min:  9.783949593493343, max:  9.783949593493344 },
+        lng: { min: 125.49870493222036, max: 125.49870493222037 },
         name: "Canlanipa",
       },
     };
+   
 
     // Helper function to generate random coordinates within a range
     this.getRandomCoordinate = (min, max) => {
@@ -91,13 +136,127 @@ class StreetlightMap {
 
     // Add province coordinates
     this.provinceCoords = {
-      BTU: { lat: 8.955, lng: 125.533, name: "Butuan City" },
-      SUR: { lat: 9.787, lng: 125.49, name: "Surigao City" },
+      
+      SUR: { lat: 9.787, lng: 125.49, name: "Surigao del Norte" },
+      BTU: { lat: 8.955, lng: 125.533, name: "Agusan del Norte" },
+
     };
+
+  //Provinces of Caraga Region -//
+  
+    this.Car ={
+      ADN: { lat: 9.133, lng: 125.533, name: "Agusan del Norte" },
+      ADS: { lat: 9.787, lng: 125.49, name: "Surigao del Norte" },
+      AGS: { lat: 8.95, lng: 125.53, name: "Agusan del Sur" },
+      SUR: { lat: 9.787, lng: 125.49, name: "Surigao del Sur" },
+      DIN: { lat: 9.783, lng: 125.488, name: "Dinagat Islands" },
+    }
+  
+  //end Provinces of Caraga Region -//
+
+  // Municipalities and Cities of Agusan del Norte -//
+    this.ADNCoords = {
+      CAB: { lat: 9.133, lng: 125.533, name: "Cabadbaran City" },
+      BTU: { lat: 8.955, lng: 125.533, name: "Butuan City" },
+      CAR: { lat: 9.783, lng: 125.488, name: "Carmen" },
+      BUE: { lat: 9.783, lng: 125.488, name: "Buenavista" },
+      JAB: { lat: 9.783, lng: 125.488, name: "Jabonga" },
+      KIT: { lat: 9.783, lng: 125.488, name: "Kitcharao" },
+      LAS: { lat: 9.783, lng: 125.488, name: "Las Nieves" },
+      MAG: { lat: 9.783, lng: 125.488, name: "Magallanes" },
+      NAS: { lat: 9.783, lng: 125.488, name: "Nasipit" },
+      RTR: { lat: 9.783, lng: 125.488, name: "Remedios T. Romualdez" },
+      SAN: { lat: 9.783, lng: 125.488, name: "Santiago" },
+      TAG: { lat: 9.783, lng: 125.488, name: "Tubay" },
+    };
+  //end  Municipalities and Cities of Agusan del Norte -//
+
+  // Municipalities of Agusan del Sur -//
+    this.ADSCoords = {
+      BAY: { lat: 8.95, lng: 125.53, name: "Bayugan City" },
+      BUN: { lat: 8.95, lng: 125.53, name: "Bunawan" },
+      ESP: { lat: 8.95, lng: 125.53, name: "Esperanza" },
+      LAP: { lat: 8.95, lng: 125.53, name: "La Paz" },
+      LOR: { lat: 8.95, lng: 125.53, name: "Loreto" },
+      PRO: { lat: 8.95, lng: 125.53, name: "Prosperidad" },
+      ROS: { lat: 8.95, lng: 125.53, name: "Rosario" },
+      SANF: { lat: 8.95, lng: 125.53, name: "San Francisco" },
+      SANL: { lat: 8.95, lng: 125.53, name: "San Luis" },
+      SANTJ: { lat: 8.95, lng: 125.53, name: "Santa Josefa" },
+      TAL: { lat: 8.95, lng: 125.53, name: "Talacogon" },
+      TREN: { lat: 8.95, lng: 125.53, name: "Trento" },
+      SIB: { lat: 8.95, lng: 125.53, name: "Sibagat" },
+      VER: { lat: 8.95, lng: 125.53, name: "Veruela" },
+    };
+  //end  Municipalities of Agusan del Sur -//
+
+  // Municipalities and Cities of Surigao del Norte -//
+  this.SDNCoords = {
+    SUR: { lat: 9.783, lng: 125.488, name: "Surigao City" },
+    DAP: { lat: 9.783, lng: 125.488, name: "Dapa" },
+    ALE: { lat: 9.783, lng: 125.488, name: "Alegria" },
+    BAC: { lat: 9.783, lng: 125.488, name: "Bacuag" },
+    BUR: { lat: 9.783, lng: 125.488, name: "Burgos" },
+    CLA: { lat: 9.783, lng: 125.488, name: "Claver" },
+    DELC: { lat: 9.783, lng: 125.488, name: "Del Carmen" },
+    GENL: { lat: 9.783, lng: 125.488, name: "General Luna" },
+    GIG: { lat: 9.783, lng: 125.488, name: "Gigaquit" },
+    MAI: { lat: 9.783, lng: 125.488, name: "Mainit" },
+    MAL: { lat: 9.783, lng: 125.488, name: "Malimono" },
+    PILA: { lat: 9.783, lng: 125.488, name: "Pilar" },
+    PLA: { lat: 9.783, lng: 125.488, name: "Placer" },
+    SANB: { lat: 9.783, lng: 125.488, name: "San Benito" },
+    SANF: { lat: 9.783, lng: 125.488, name: "San Francisco" },
+    SANI: { lat: 9.783, lng: 125.488, name: "San Isidro" },
+    SANTM: { lat: 9.783, lng: 125.488, name: "Santa Monica" },
+    SISO: { lat: 9.783, lng: 125.488, name: "Sison" },
+    SOCO: { lat: 9.783, lng: 125.488, name: "Socorro" },
+    TAGA: { lat: 9.783, lng: 125.488, name: "Tagana-an" },
+    TUB: { lat: 9.783, lng: 125.488, name: "Tubod" },
+  };
+  //end  Municipalities and Cities of Surigao del Norte -//
+
+    // Municipalities and Cities of Surigao del Sur -//
+    this.SDSCoords = {
+      BIS: { lat: 9.783, lng: 125.488, name: "Bislig City" },
+      TAN: { lat: 9.783, lng: 125.488, name: "Tandag City" },
+      BAR: { lat: 9.783, lng: 125.488, name: "Barobo" },
+      BAY: { lat: 9.783, lng: 125.488, name: "Bayabas" },
+      CAG: { lat: 9.783, lng: 125.488, name: "Cagwait" },
+      CAN: { lat: 9.783, lng: 125.488, name: "Cantilan" },
+      SDSCAR: { lat: 9.783, lng: 125.488, name: "Carmen" },
+      CARR: { lat: 9.783, lng: 125.488, name: "Carrascal" },
+      COR: { lat: 9.783, lng: 125.488, name: "Cortes" },
+      HIN: { lat: 9.783, lng: 125.488, name: "Hinatuan" },
+      LAN: { lat: 9.783, lng: 125.488, name: "Lanuza" },
+      LIA: { lat: 9.783, lng: 125.488, name: "Lianga" },
+      LING: { lat: 9.783, lng: 125.488, name: "Lingig" },
+      MAD: { lat: 9.783, lng: 125.488, name: "Madrid" },
+      MAR: { lat: 9.783, lng: 125.488, name: "Marihatag" },
+      SANA: { lat: 9.783, lng: 125.488, name: "San Agustin" },
+      SANM: { lat: 9.783, lng: 125.488, name: "San Miguel" },
+      TAG: { lat: 9.783, lng: 125.488, name: "Tagbina" },
+      TAGO: { lat: 9.783, lng: 125.488, name: "Tago" },
+    };
+    //end  Municipalities and Cities of Surigao del Sur -//
+
+
+    // Municipalities and Cities of Dinagat Island -//
+    this.DICoords = {
+      BAS: { lat: 9.783, lng: 125.488, name: "Basilisa" },
+      CAGD: { lat: 9.783, lng: 125.488, name: "Cagdianao" },
+      DINAG: { lat: 9.783, lng: 125.488, name: "Dinagat" },
+      LIBJ: { lat: 9.783, lng: 125.488, name: "Libjo" },
+      LORE: { lat: 9.783, lng: 125.488, name: "Loreto" },
+      SANJO: { lat: 9.783, lng: 125.488, name: "San Jose" },
+      TuBA: { lat: 9.783, lng: 125.488, name: "Tubajon" },
+    };
+    //end  Municipalities and Cities of Dinagat Island -//
 
     this.setupMap();
     this.markers = new L.LayerGroup().addTo(this.map);
     this.loadProvinces(); // Change initial load to provinces
+   
 
     // Add zoom levels configuration
     this.zoomLevels = {
@@ -155,7 +314,7 @@ class StreetlightMap {
         this.clearMarkers();
 
         // Reset zoom to overview level
-        this.map.flyTo([9.215937, 125.981771], 9, {
+        this.map.flyTo([9.215937, 125.981771], 8.50, {
           duration: 1.5,
           easeLinearity: 0.25,
         });
@@ -176,17 +335,17 @@ class StreetlightMap {
           return acc;
         }, {});
 
-        // Add markers for each province
+        // Add markers for each province with click event to zoom
         Object.values(groupedData).forEach((province) => {
-          this.addProvinceMarker(province);
-        });
+          const marker = this.addProvinceMarker(province);
 
-        this.handleZoom();
+        });
       }
     } catch (error) {
       console.error("Failed to load provinces:", error);
     }
   }
+
 
   async loadMunicipalities(provinceCode = null) {
     try {
@@ -204,12 +363,7 @@ class StreetlightMap {
       if (data.status === "success") {
         this.clearMarkers();
 
-        // Reset zoom to city level when showing all municipalities
-        this.map.flyTo([9.215937, 125.981771], this.zoomLevels.city, {
-          duration: 1.5,
-          easeLinearity: 0.25,
-        });
-
+    
         // Group data by municipality code (BTU, SUR, etc.)
         const groupedData = data.data.reduce((acc, item) => {
           const municipalityCode = item.socid.split("-")[0];
@@ -290,7 +444,7 @@ class StreetlightMap {
           }
         });
 
-        // Add markers for each barangay
+        // Add markers for each barangay (color red)
         Object.values(groupedByBarangay).forEach((barangay) => {
           if (barangay.lat && barangay.lng) {
             // Create a marker for the barangay center
@@ -299,7 +453,7 @@ class StreetlightMap {
                 className: "custom-marker",
                 html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
                 iconSize: [30, 30],
-                iconAnchor: [15, 30],
+                iconAnchor: [12, 30],
               }),
             });
 
@@ -316,27 +470,6 @@ class StreetlightMap {
 
             this.streetlightMarkers.addLayer(barangayMarker);
 
-            // Add individual streetlight markers around the barangay center
-            barangay.streetlights.forEach((streetlight, index) => {
-              // Create a small random offset for each streetlight
-              const offset = this.getRandomOffset(0.0002); // About 20 meters
-              const streetlightMarker = L.marker(
-                [barangay.lat + offset.lat, barangay.lng + offset.lng],
-                {
-                  icon: L.divIcon({
-                    className: "custom-marker",
-                    html: '<i class="fas fa-lightbulb text-warning fa-lg"></i>',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 20],
-                  }),
-                }
-              );
-
-              streetlightMarker.bindPopup(
-                this.createStreetlightPopup(streetlight)
-              );
-              this.streetlightMarkers.addLayer(streetlightMarker);
-            });
           }
         });
 
@@ -354,50 +487,65 @@ class StreetlightMap {
     this.streetlightMarkers.clearLayers();
   }
 
-  addProvinceMarker(province) {
-    if (!province.lat || !province.lng) {
-      console.error("Invalid coordinates for province:", province);
-      return;
-    }
+     //    SUR: { lat: 9.561427, lng: 125.783977, name: "Surigao del Norte" },
+     // BTU: { lat: 8.879704, lng: 125.48, name: "Agusan del Norte" },
 
-    const marker = L.marker([province.lat, province.lng], {
-      icon: L.divIcon({
-        className: "custom-marker",
-        html: '<i class="fas fa-building text-primary fa-3x"></i>',
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-      }),
-    });
-
-    marker.bindPopup(this.createProvincePopup(province)).on("click", () => {
-      this.map.flyTo([province.lat, province.lng], this.zoomLevels.city, {
-        duration: 1.5,
-        easeLinearity: 0.25,
+     addProvinceMarker(province) {
+      if (!province.lat || !province.lng) {
+          console.error("❌ Invalid coordinates for province:", province);
+          return;
+      }
+  
+      // Define custom icon positions for each province
+      const customIconPositions = {
+          "BTU": { iconSize: [50, 50], iconAnchor: [27, 21] }, // Example
+          "SUR": { iconSize: [40, 40], iconAnchor: [-62.25, -18] }, // Example
+  
+          // Add more as needed
+      };
+  
+      // Get custom icon settings or use default
+      const { iconSize, iconAnchor } = customIconPositions[province.code] || { iconSize: [40, 40], iconAnchor: [13, 40] };
+  
+      // Create marker with adjustable icon position
+      const marker = L.marker([province.lat, province.lng], {
+          icon: L.divIcon({
+              className: "custom-marker",
+              html: '<i class="fas fa-building text-primary fa-3x"></i>',
+              iconSize: iconSize,
+              iconAnchor: iconAnchor,
+          }),
       });
-      this.loadMunicipalities(province.code);
-    });
-
-    this.cityMarkers.addLayer(marker);
+  
+      // Preserve click functionality
+      marker.on("click", () => {
+          this.map.flyTo([province.lat, province.lng], this.zoomLevels.city, {
+              duration: 1.5,
+              easeLinearity: 0.25,
+          });
+          this.loadMunicipalities(province.code);
+      });
+  
+      // Add marker to the map
+      this.cityMarkers.addLayer(marker);
   }
-
+  
   addMunicipalityMarker(municipality) {
     if (!municipality.lat || !municipality.lng) {
       console.error("Invalid coordinates for municipality:", municipality);
       return;
     }
-
+    // municipality tulo ka
     const marker = L.marker([municipality.lat, municipality.lng], {
       icon: L.divIcon({
         className: "custom-marker",
-        html: '<i class="fas fa-city text-primary fa-2x"></i>',
+        html: '<i class="fas fa-city text-primary fa-3x"></i>',
         iconSize: [30, 30],
-        iconAnchor: [15, 30],
+        iconAnchor: [17, 34],
       }),
     });
 
-    marker
-      .bindPopup(this.createMunicipalityPopup(municipality))
-      .on("click", () => {
+    marker.on("click", () => {
         // Zoom to municipality level
         this.map.flyTo(
           [municipality.lat, municipality.lng],
@@ -422,9 +570,7 @@ class StreetlightMap {
       }),
     });
 
-    cityMarker
-      .bindPopup(this.createMunicipalityPopup(municipality))
-      .on("click", () => {
+    cityMarker.on("click", () => {
         this.map.flyTo(
           [municipality.lat, municipality.lng],
           this.zoomLevels.city,
@@ -512,36 +658,29 @@ class StreetlightMap {
   createBarangayPopup(streetlight) {
     const container = L.DomUtil.create("div", "p-3");
     container.innerHTML = `
-      <h6 class="fw-bold mb-2">${streetlight.name}</h6>
-      <div class="mb-2">
-        <strong>Streetlight ID:</strong> ${streetlight.code}
+      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
+      <div class="mb-2"><strong>Total:</strong>18</div>
+      <div class="mb-2"><strong>Status:</strong> Active 8 </div>
+      <div class="mb-2"><strong>Status:</strong> Inactive 10</div>
+      <div class="d-flex justify-content-center">
+        <button class="btn btn-sm btn-secondary mt-2 moredetails">More Details</button>
       </div>
-      <div class="mb-2">
-        <strong>Status:</strong> ${this.getStatusBadge(streetlight)}
-      </div>
-      <div class="mb-2">
-        <strong>Battery:</strong> ${streetlight.batsoc}%
-      </div>
-      <div class="mb-2">
-        <strong>Last Updated:</strong><br>
-        ${new Date(streetlight.date).toLocaleString()}
-      </div>
-      <button class="btn btn-sm btn-secondary mt-2 back-to-municipality">Back to Municipality</button>
     `;
 
-    // Add click handler after popup is created
+    // Add event listener for "More Details" button
     setTimeout(() => {
-      const backButton = container.querySelector(".back-to-municipality");
-      if (backButton) {
-        L.DomEvent.on(backButton, "click", (e) => {
+      const moreDetailsButton = container.querySelector(".moredetails");
+      if (moreDetailsButton) {
+        L.DomEvent.on(moreDetailsButton, "click", (e) => {
           L.DomEvent.stopPropagation(e);
-          this.loadMunicipalities(streetlight.code.split("-")[0]);
+          this.showMoreDetailsStreetLightsPopup(streetlight); // Open the full-screen popup
         });
       }
     }, 0);
 
     return container;
-  }
+}
+
 
   getStatusBadge(barangay) {
     const status = barangay.batsoc > 20 ? "Active" : "Low Battery";
@@ -579,4 +718,107 @@ class StreetlightMap {
       </div>
     `;
   }
+
+
+//-----------------------------------More-Details-Pop-Up----------------------------------/
+showMoreDetailsStreetLightsPopup(streetlight) {
+  // Remove any existing popups to avoid duplication
+  const existingPopup = document.querySelector(".full-screen-popup");
+  if (existingPopup) {
+    document.body.removeChild(existingPopup);
+  }
+
+  // Create the full-screen popup container
+  const popupContainer = document.createElement("div");
+  popupContainer.className = "full-screen-popup d-flex position-fixed top-0 start-0 w-100 h-100 bg-white";
+  popupContainer.style.zIndex = "1050"; // Ensure it appears on top
+  popupContainer.style.overflowY = "auto";
+
+  // Add the content inside the popup
+  popupContainer.innerHTML = `
+    <div class="popup-content ;">
+      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
+      <div class="mb-2"><i class="fas fa-map-marker-alt text-danger fa-2x"></i></strong>18</div>
+      <div class="mb-2"><strong>Status:</strong> Active 8 </div>
+      <div class="mb-2"><strong>Status:</strong> Inactive 10</div>
+      <div class="text-center mt-4">
+        <button class="btn btn-danger close-popup">Close</button>
+      </div>
+    </div>
+  `;
+
+  // Append to body
+  document.body.appendChild(popupContainer);
+
+  // Add event listener for closing the popup
+  setTimeout(() => {
+    const closeButton = popupContainer.querySelector(".close-popup");
+    if (closeButton) {
+      closeButton.addEventListener("click", () => {
+        document.body.removeChild(popupContainer);
+      });
+    }
+  }, 0);
 }
+
+
+
+showMoreDetailsPopup(streetlight) {
+  // Remove any existing popups to avoid duplication
+  const existingPopup = document.querySelector(".full-screen-popup");
+  if (existingPopup) {
+    document.body.removeChild(existingPopup);
+  }
+
+  // Create the full-screen popup container
+  const popupContainer = document.createElement("div");
+  popupContainer.className = "full-screen-popup d-flex align-items-center justify-content-center position-fixed top-0 start-0 w-100 h-100 bg-white";
+  popupContainer.style.zIndex = "1050"; // Ensure it appears on top
+  popupContainer.style.overflowY = "auto";
+
+  // Add the content inside the popup
+  popupContainer.innerHTML = `
+    <div class="popup-content ;">
+      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
+      <div class="mb-2"><strong>Streetlight ID:</strong> ${streetlight.code}</div>
+      <div class="mb-2"><strong>Status:</strong> ${this.getStatusBadge(streetlight)}</div>
+      <div class="mb-2"><strong>Battery:</strong> ${streetlight.batsoc}%</div>
+      <div class="mb-2"><strong>Last Updated:</strong> ${new Date(streetlight.date).toLocaleString()}</div>
+      <div class="mb-2"><strong>Location:</strong> ${streetlight.lat}, ${streetlight.lng}</div>
+      <div class="mb-2"><strong>Installation Date:</strong> ${new Date(streetlight.installationDate).toLocaleDateString()}</div>
+      <div class="text-center mt-4">
+        <button class="btn btn-danger close-popup">Close</button>
+      </div>
+    </div>
+  `;
+
+  // Append to body
+  document.body.appendChild(popupContainer);
+
+  // Add event listener for closing the popup
+  setTimeout(() => {
+    const closeButton = popupContainer.querySelector(".close-popup");
+    if (closeButton) {
+      closeButton.addEventListener("click", () => {
+        document.body.removeChild(popupContainer);
+      });
+    }
+  }, 0);
+}
+  
+//-----------------------------------Polygon-----------------------------------/
+//edited or kanang gi add nako kay naay -// sa comments //
+
+//pending last be edited because it is not too important
+
+// Steps to Display Coordinates on Hover that can easily copy the coordinates-//
+
+//-//
+}
+
+
+
+
+
+
+
