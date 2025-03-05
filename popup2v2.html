@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Line Chart with Zoom</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">Fixed Line Chart with Zoom</h2>
+        <div class="chart-container" id="chartContainer">
+            <canvas id="chartCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('chartCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('chartContainer');
+
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+
+        let dataPoints = [10, 25, 15, 40, 35, 50, 45];
+        let labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+
+        let scaleX = 50;  // Space between points
+        let scaleY = 5;   // Scale for values
+        let zoomFactor = 1;
+        let maxZoom = 3;  
+        let minZoom = 0.5;
+
+        function drawChart() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let offsetX = 50;  // Fixed X offset
+            let offsetY = canvas.height - 50; // Fixed Y offset
+
+            // Draw axes
+            ctx.strokeStyle = '#000';
+            ctx.beginPath();
+            ctx.moveTo(40, 10);
+            ctx.lineTo(40, canvas.height - 40);
+            ctx.lineTo(canvas.width - 10, canvas.height - 40);
+            ctx.stroke();
+
+            // Draw labels
+            ctx.fillStyle = '#000';
+            ctx.font = '14px Arial';
+            labels.forEach((label, index) => {
+                let x = offsetX + index * scaleX * zoomFactor;
+                ctx.fillText(label, x - 10, canvas.height - 20);
+            });
+
+            // Draw line
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            dataPoints.forEach((value, index) => {
+                let x = offsetX + index * scaleX * zoomFactor;
+                let y = offsetY - value * scaleY * zoomFactor;
+                if (index === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Draw points
+            ctx.fillStyle = 'red';
+            dataPoints.forEach((value, index) => {
+                let x = offsetX + index * scaleX * zoomFactor;
+                let y = offsetY - value * scaleY * zoomFactor;
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        drawChart();
+
+        // Zooming with mouse wheel (no panning)
+        container.addEventListener('wheel', (event) => {
+            event.preventDefault();
+            let zoomChange = event.deltaY > 0 ? 0.9 : 1.1;
+            zoomFactor = Math.min(Math.max(zoomFactor * zoomChange, minZoom), maxZoom);
+            drawChart();
+        });
+
+        // Resize handling
+        window.addEventListener('resize', () => {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            drawChart();
+        });
+    </script>
+</body>
+</html>

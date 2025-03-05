@@ -518,8 +518,7 @@ document.addEventListener("keydown", (event) => {
       });
   
       // Preserve click functionality
-      marker.bindPopup(this.createProvincePopup(province)).on("click", () => {
-          console.log(`📍 Zooming to: ${province.code} (${province.lat}, ${province.lng})`);
+      marker.on("click", () => {
           this.map.flyTo([province.lat, province.lng], this.zoomLevels.city, {
               duration: 1.5,
               easeLinearity: 0.25,
@@ -546,9 +545,7 @@ document.addEventListener("keydown", (event) => {
       }),
     });
 
-    marker
-      .bindPopup(this.createMunicipalityPopup(municipality))
-      .on("click", () => {
+    marker.on("click", () => {
         // Zoom to municipality level
         this.map.flyTo(
           [municipality.lat, municipality.lng],
@@ -573,9 +570,7 @@ document.addEventListener("keydown", (event) => {
       }),
     });
 
-    cityMarker
-      .bindPopup(this.createMunicipalityPopup(municipality))
-      .on("click", () => {
+    cityMarker.on("click", () => {
         this.map.flyTo(
           [municipality.lat, municipality.lng],
           this.zoomLevels.city,
