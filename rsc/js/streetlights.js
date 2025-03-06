@@ -19,7 +19,7 @@ class StreetlightMap {
 // Steps to Display Coordinates on Hover -//
 // Event listener for mouse movement to update coordinates
 this.map.on("mousemove", (e) => {
-  const coordinatesText = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`;
+  const coordinatesText = `lat: ${e.latlng.lat.toFixed(6)}, lng: ${e.latlng.lng.toFixed(6)}`;
   document.getElementById("coordinates").innerText = coordinatesText;
 });
 
@@ -42,24 +42,7 @@ document.addEventListener("keydown", (event) => {
     // Add zoom end event listener
     this.map.on("zoomend", () => this.handleZoom());
 
-    // Butuan City Barangays in Database -//
-    this.BTUbarangayCoords = {
-      "BTU-LIB": { lat: 8.945, lng: 125.528, name: "Libertad" },
-      "BTU-DBF": { lat: 8.952, lng: 125.532, name: "Doongan Baan Ferry" },
-      "BTU-BAN": { lat: 8.958, lng: 125.535, name: "Baan" },
-      "BTU-BON": { lat: 8.963, lng: 125.538, name: "Boning" },
-    }
-    //end Butuan Barangays in Database -//
-
-    // Surigao City Barangays in Database -//
-    this.SURbarangayCoords = {
-      "SUR-LUN": { lat: 9.782, lng: 125.485, name: "Luna" },
-      "SUR-WAW": { lat: 9.788, lng: 125.488, name: "Washington" },
-      "SUR-TIN": { lat: 9.792, lng: 125.492, name: "Tinio" },
-      "SUR-CAN": { lat: 9.795, lng: 125.495, name: "Canlanipa" },
-    }
-    //end Surigao Barangays in Database -//
-
+   
     // Random coordinates within Butuan and Surigao areas
     this.barangayCoords = {
       // Butuan City barangays (around 8.94-8.97, 125.52-125.54)
@@ -142,116 +125,6 @@ document.addEventListener("keydown", (event) => {
 
     };
 
-  //Provinces of Caraga Region -//
-  
-    this.Car ={
-      ADN: { lat: 9.133, lng: 125.533, name: "Agusan del Norte" },
-      ADS: { lat: 9.787, lng: 125.49, name: "Surigao del Norte" },
-      AGS: { lat: 8.95, lng: 125.53, name: "Agusan del Sur" },
-      SUR: { lat: 9.787, lng: 125.49, name: "Surigao del Sur" },
-      DIN: { lat: 9.783, lng: 125.488, name: "Dinagat Islands" },
-    }
-  
-  //end Provinces of Caraga Region -//
-
-  // Municipalities and Cities of Agusan del Norte -//
-    this.ADNCoords = {
-      CAB: { lat: 9.133, lng: 125.533, name: "Cabadbaran City" },
-      BTU: { lat: 8.955, lng: 125.533, name: "Butuan City" },
-      CAR: { lat: 9.783, lng: 125.488, name: "Carmen" },
-      BUE: { lat: 9.783, lng: 125.488, name: "Buenavista" },
-      JAB: { lat: 9.783, lng: 125.488, name: "Jabonga" },
-      KIT: { lat: 9.783, lng: 125.488, name: "Kitcharao" },
-      LAS: { lat: 9.783, lng: 125.488, name: "Las Nieves" },
-      MAG: { lat: 9.783, lng: 125.488, name: "Magallanes" },
-      NAS: { lat: 9.783, lng: 125.488, name: "Nasipit" },
-      RTR: { lat: 9.783, lng: 125.488, name: "Remedios T. Romualdez" },
-      SAN: { lat: 9.783, lng: 125.488, name: "Santiago" },
-      TAG: { lat: 9.783, lng: 125.488, name: "Tubay" },
-    };
-  //end  Municipalities and Cities of Agusan del Norte -//
-
-  // Municipalities of Agusan del Sur -//
-    this.ADSCoords = {
-      BAY: { lat: 8.95, lng: 125.53, name: "Bayugan City" },
-      BUN: { lat: 8.95, lng: 125.53, name: "Bunawan" },
-      ESP: { lat: 8.95, lng: 125.53, name: "Esperanza" },
-      LAP: { lat: 8.95, lng: 125.53, name: "La Paz" },
-      LOR: { lat: 8.95, lng: 125.53, name: "Loreto" },
-      PRO: { lat: 8.95, lng: 125.53, name: "Prosperidad" },
-      ROS: { lat: 8.95, lng: 125.53, name: "Rosario" },
-      SANF: { lat: 8.95, lng: 125.53, name: "San Francisco" },
-      SANL: { lat: 8.95, lng: 125.53, name: "San Luis" },
-      SANTJ: { lat: 8.95, lng: 125.53, name: "Santa Josefa" },
-      TAL: { lat: 8.95, lng: 125.53, name: "Talacogon" },
-      TREN: { lat: 8.95, lng: 125.53, name: "Trento" },
-      SIB: { lat: 8.95, lng: 125.53, name: "Sibagat" },
-      VER: { lat: 8.95, lng: 125.53, name: "Veruela" },
-    };
-  //end  Municipalities of Agusan del Sur -//
-
-  // Municipalities and Cities of Surigao del Norte -//
-  this.SDNCoords = {
-    SUR: { lat: 9.783, lng: 125.488, name: "Surigao City" },
-    DAP: { lat: 9.783, lng: 125.488, name: "Dapa" },
-    ALE: { lat: 9.783, lng: 125.488, name: "Alegria" },
-    BAC: { lat: 9.783, lng: 125.488, name: "Bacuag" },
-    BUR: { lat: 9.783, lng: 125.488, name: "Burgos" },
-    CLA: { lat: 9.783, lng: 125.488, name: "Claver" },
-    DELC: { lat: 9.783, lng: 125.488, name: "Del Carmen" },
-    GENL: { lat: 9.783, lng: 125.488, name: "General Luna" },
-    GIG: { lat: 9.783, lng: 125.488, name: "Gigaquit" },
-    MAI: { lat: 9.783, lng: 125.488, name: "Mainit" },
-    MAL: { lat: 9.783, lng: 125.488, name: "Malimono" },
-    PILA: { lat: 9.783, lng: 125.488, name: "Pilar" },
-    PLA: { lat: 9.783, lng: 125.488, name: "Placer" },
-    SANB: { lat: 9.783, lng: 125.488, name: "San Benito" },
-    SANF: { lat: 9.783, lng: 125.488, name: "San Francisco" },
-    SANI: { lat: 9.783, lng: 125.488, name: "San Isidro" },
-    SANTM: { lat: 9.783, lng: 125.488, name: "Santa Monica" },
-    SISO: { lat: 9.783, lng: 125.488, name: "Sison" },
-    SOCO: { lat: 9.783, lng: 125.488, name: "Socorro" },
-    TAGA: { lat: 9.783, lng: 125.488, name: "Tagana-an" },
-    TUB: { lat: 9.783, lng: 125.488, name: "Tubod" },
-  };
-  //end  Municipalities and Cities of Surigao del Norte -//
-
-    // Municipalities and Cities of Surigao del Sur -//
-    this.SDSCoords = {
-      BIS: { lat: 9.783, lng: 125.488, name: "Bislig City" },
-      TAN: { lat: 9.783, lng: 125.488, name: "Tandag City" },
-      BAR: { lat: 9.783, lng: 125.488, name: "Barobo" },
-      BAY: { lat: 9.783, lng: 125.488, name: "Bayabas" },
-      CAG: { lat: 9.783, lng: 125.488, name: "Cagwait" },
-      CAN: { lat: 9.783, lng: 125.488, name: "Cantilan" },
-      SDSCAR: { lat: 9.783, lng: 125.488, name: "Carmen" },
-      CARR: { lat: 9.783, lng: 125.488, name: "Carrascal" },
-      COR: { lat: 9.783, lng: 125.488, name: "Cortes" },
-      HIN: { lat: 9.783, lng: 125.488, name: "Hinatuan" },
-      LAN: { lat: 9.783, lng: 125.488, name: "Lanuza" },
-      LIA: { lat: 9.783, lng: 125.488, name: "Lianga" },
-      LING: { lat: 9.783, lng: 125.488, name: "Lingig" },
-      MAD: { lat: 9.783, lng: 125.488, name: "Madrid" },
-      MAR: { lat: 9.783, lng: 125.488, name: "Marihatag" },
-      SANA: { lat: 9.783, lng: 125.488, name: "San Agustin" },
-      SANM: { lat: 9.783, lng: 125.488, name: "San Miguel" },
-      TAG: { lat: 9.783, lng: 125.488, name: "Tagbina" },
-      TAGO: { lat: 9.783, lng: 125.488, name: "Tago" },
-    };
-    //end  Municipalities and Cities of Surigao del Sur -//
-
-
-    // Municipalities and Cities of Dinagat Island -//
-    this.DICoords = {
-      BAS: { lat: 9.783, lng: 125.488, name: "Basilisa" },
-      CAGD: { lat: 9.783, lng: 125.488, name: "Cagdianao" },
-      DINAG: { lat: 9.783, lng: 125.488, name: "Dinagat" },
-      LIBJ: { lat: 9.783, lng: 125.488, name: "Libjo" },
-      LORE: { lat: 9.783, lng: 125.488, name: "Loreto" },
-      SANJO: { lat: 9.783, lng: 125.488, name: "San Jose" },
-      TuBA: { lat: 9.783, lng: 125.488, name: "Tubajon" },
-    };
-    //end  Municipalities and Cities of Dinagat Island -//
 
     this.setupMap();
     this.markers = new L.LayerGroup().addTo(this.map);
@@ -722,46 +595,133 @@ document.addEventListener("keydown", (event) => {
 
 //-----------------------------------More-Details-Pop-Up----------------------------------/
 showMoreDetailsStreetLightsPopup(streetlight) {
-  // Remove any existing popups to avoid duplication
   const existingPopup = document.querySelector(".full-screen-popup");
   if (existingPopup) {
     document.body.removeChild(existingPopup);
   }
 
-  // Create the full-screen popup container
   const popupContainer = document.createElement("div");
-  popupContainer.className = "full-screen-popup d-flex position-fixed top-0 start-0 w-100 h-100 bg-white";
-  popupContainer.style.zIndex = "1050"; // Ensure it appears on top
-  popupContainer.style.overflowY = "auto";
+  popupContainer.className = "full-screen-popup justify-content-center";
+  popupContainer.id = "popup";
 
-  // Add the content inside the popup
   popupContainer.innerHTML = `
-    <div class="popup-content ;">
-      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
-      <div class="mb-2"><i class="fas fa-map-marker-alt text-danger fa-2x"></i></strong>18</div>
-      <div class="mb-2"><strong>Status:</strong> Active 8 </div>
-      <div class="mb-2"><strong>Status:</strong> Inactive 10</div>
-      <div class="text-center mt-4">
-        <button class="btn btn-danger close-popup">Close</button>
+    <div class="popup-content">
+      <button class="close-icon" onclick="closePopup()">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <h4 class="fw-bold text-center mb-4">${streetlight.name} Street lights</h4>
+      <div class="number-container mb-3">
+        <div class="number-square">
+          <i class="fa-solid fa-1"></i>
+        </div>
+<span class="ms-2"><strong>Status:</strong></span>
+          <span class="ms-2"><i class="fa-solid fa-lightbulb icon-outside"></i></span>
+          <span class="ms-2"><strong class="me-1">Battery:</strong>Active</span>
+          <button class="btn btn-sm btn-secondary mt-2 ms-2 viewmoredetails">View More Details</button>
+      </div>
+      <!-- Repeat for numbers 2-7 -->
+      ${[2,3,4,5,6,7].map(num => `
+        <div class="number-container mb-3">
+          <div class="number-square">
+            <i class="fa-solid fa-${num}"></i>
+          </div>
+          <span class="ms-2"><strong>Status:</strong></span>
+          <span class="ms-2"><i class="fa-solid fa-lightbulb icon-outside"></i></span>
+          <span class="ms-2"><strong class="me-1">Battery:</strong>Active</span>
+          <button class="btn btn-sm btn-secondary mt-2 ms-2 viewmoredetails">View More Details</button>
+        </div>
+      `).join('')}
+      
+      <div class="close-button">
+        <button class="btn btn-danger" onclick="closePopup()">Close</button>
       </div>
     </div>
   `;
 
-  // Append to body
+  // Add styles to head if not already present
+  if (!document.getElementById('popup-styles')) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = 'popup-styles';
+    styleSheet.textContent = `
+      .full-screen-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        z-index: 1050;
+      }
+      .popup-content {
+        background: white;
+        max-width: 800px;
+        margin: auto;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding-top: 50px;
+      }
+      .number-square {
+        width: 37px;
+        height: 37px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #000;
+        border-radius: 5px;
+        font-size: 18px;
+        font-weight: bold;
+        background-color: #1671cb;
+        color: white;
+      }
+      .number-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .icon-outside {
+        font-size: 40px;
+        color: #edf050;
+      }
+      .close-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #dc3545;
+        background: none;
+        border: none;
+        padding: 5px;
+        transition: color 0.3s ease;
+      }
+      .close-icon:hover {
+        color: #bb2d3b;
+      }
+      .close-button {
+        position: sticky;
+        bottom: 0;
+        width: 100%;
+        padding: 15px;
+        background: white;
+        text-align: center;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+  }
+
   document.body.appendChild(popupContainer);
 
-  // Add event listener for closing the popup
-  setTimeout(() => {
-    const closeButton = popupContainer.querySelector(".close-popup");
-    if (closeButton) {
-      closeButton.addEventListener("click", () => {
-        document.body.removeChild(popupContainer);
-      });
-    }
-  }, 0);
+  // Add close functionality
+  window.closePopup = function() {
+    document.getElementById("popup").remove();
+  };
 }
-
-
 
 showMoreDetailsPopup(streetlight) {
   // Remove any existing popups to avoid duplication
@@ -779,7 +739,7 @@ showMoreDetailsPopup(streetlight) {
   // Add the content inside the popup
   popupContainer.innerHTML = `
     <div class="popup-content ;">
-      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
+      <h4 class="fw-bold text-center mb-3">${streetlight.name} Street lights</h4>
       <div class="mb-2"><strong>Streetlight ID:</strong> ${streetlight.code}</div>
       <div class="mb-2"><strong>Status:</strong> ${this.getStatusBadge(streetlight)}</div>
       <div class="mb-2"><strong>Battery:</strong> ${streetlight.batsoc}%</div>
