@@ -29,7 +29,8 @@
             position: relative;
             max-height: 90vh;
             overflow-y: auto;
-            padding-top: 50px; /* Add more top padding to accommodate the close icon */
+            padding-top: 45px; /* Add more top padding to accommodate the close icon */
+            padding-bottom: 5px; /* Remove extra bottom padding */
         }
 
         .number-square {
@@ -54,7 +55,8 @@
 
         .icon-outside {
             font-size: 40px; /* Adjust size as needed */
-            color: #edf050; /* Adjust color if needed */
+            color: white; /* White icon */
+            -webkit-text-stroke: 2px black; /* Black border around the icon */
         }
 
         .close-button {
@@ -64,6 +66,7 @@
             padding: 15px;
             background: white;
             text-align: center;
+
         }
 
         .close-icon {
@@ -72,7 +75,6 @@
             right: 10px;
             font-size: 24px;
             cursor: pointer;
-            color: #dc3545;
             background: none;
             border: none;
             padding: 5px;
@@ -87,7 +89,7 @@
 <body>
     <div class="full-screen-popup justify-content-center" id="popup">
         <div class="popup-content">
-            <button class="close-icon" onclick="closePopup()">
+            <button class="close-icon btn-secondary" onclick="closePopup()">
                 <i class="fa-solid fa-times"></i>
             </button>
             <h4 class="fw-bold text-center mb-4">Streetlight Name</h4>
