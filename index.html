@@ -192,19 +192,19 @@
         <div class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title">Statistics</h5>
-            <p class="card-text">Total Streetlights: 150</p>
+            <p class="card-text">Total Streetlights: <span id="total-count">0</span></p>
             <p class="card-text">
-              Active: <span class="text-success">142</span>
+              Active: <span id="active-count" class="text-success">0</span>
             </p>
             <p class="card-text">
-              Inactive: <span class="text-danger">8</span>
+              Inactive: <span id="inactive-count" class="text-danger">0</span>
             </p>
           </div>
         </div>
       </div>
     </div>
     <div id="map"></div>
-
+    <script src="rsc/js/streetlight_queries.js"></script>
     <script src="rsc/js/streetlights.js"></script>
     <script>
       let map;
