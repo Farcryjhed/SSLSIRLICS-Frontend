@@ -1,8 +1,15 @@
-// Get SOCID from URL parameters
+let barangayData = null;
+
+fetch("rsc/coordinates.json")
+  .then((response) => response.json())
+  .then((data) => {
+    barangayData = data;
+  })
+  .catch((error) => console.error("Error loading coordinates:", error));
+
 const urlParams = new URLSearchParams(window.location.search);
 const socid = urlParams.get("socid");
 
-// Chart options
 const chartOptions = {
   chart: {
     type: "line",
@@ -59,6 +66,33 @@ const chart = new ApexCharts(
 );
 chart.render();
 
+function findLocation(socid) {
+  const [municipalityCode, barangayId] = socid.split("-");
+  const barangayPrefix = barangayId.slice(0, 3);
+
+  for (const province in barangayData) {
+    const municipalities = barangayData[province].municipalities;
+
+    for (const municipality in municipalities) {
+      if (municipalities[municipality].municipality_code === municipalityCode) {
+        const barangays = municipalities[municipality].barangays;
+
+        for (const barangay in barangays) {
+          if (barangay.toUpperCase().startsWith(barangayPrefix)) {
+            return {
+              barangay,
+              municipality,
+              province,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function updateStreetlightDetails(data) {
   document.getElementById(
     "streetlight-title"
@@ -80,16 +114,21 @@ function updateStreetlightDetails(data) {
     minute: "2-digit",
     hour12: true,
   });
-  document.getElementById("barangay-text").textContent =
-    data.barangay || "Unknown Barangay";
 
-  // Update status badge
+  let barangayText = "Unknown Location";
+  if (barangayData && data.socid) {
+    const location = findLocation(data.socid);
+    if (location) {
+      barangayText = `${location.barangay}, ${location.municipality}, ${location.province}`;
+    }
+  }
+  document.getElementById("barangay-text").textContent = barangayText;
+
   const statusBadge = document.getElementById("status-badge");
   const isActive = parseFloat(data.batsoc) > 20.0;
   statusBadge.textContent = isActive ? "Active" : "Inactive";
   statusBadge.className = `badge bg-${isActive ? "success" : "danger"}`;
 
-  // Update chart with new data point
   const timestamp = new Date(data.date).getTime();
   const batteryLevel = parseFloat(data.batsoc);
 
@@ -104,7 +143,6 @@ function updateStreetlightDetails(data) {
     },
   ]);
 
-  // Keep only last 24 hours of data
   const series = chart.w.config.series[0].data;
   const twentyFourHoursAgo = timestamp - 24 * 60 * 60 * 1000;
   while (series.length > 0 && series[0].x < twentyFourHoursAgo) {
@@ -112,7 +150,6 @@ function updateStreetlightDetails(data) {
   }
 }
 
-// Fetch streetlight data
 if (socid) {
   fetch(`api/endpoints/get_streetlight_details.php?socid=${socid}`)
     .then((response) => response.json())
