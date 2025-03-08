@@ -16,14 +16,12 @@ class StreetlightMap {
     this.streetlightMarkers = new L.LayerGroup().addTo(this.map);
     this.polygonLayer = new L.LayerGroup().addTo(this.map); // Layer for polygons
 
-    // Steps to Display Coordinates on Hover -//
-    // Event listener for mouse movement to update coordinates
-    this.map.on("mousemove", (e) => {
-      const coordinatesText = `lat: ${e.latlng.lat.toFixed(
-        6
-      )}, lng: ${e.latlng.lng.toFixed(6)}`;
-      document.getElementById("coordinates").innerText = coordinatesText;
-    });
+// Steps to Display Coordinates on Hover -//
+// Event listener for mouse movement to update coordinates
+this.map.on("mousemove", (e) => {
+  const coordinatesText = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`;
+  document.getElementById("coordinates").innerText = coordinatesText;
+});
 
     // Function to copy coordinates when pressing Ctrl + C
     document.addEventListener("keydown", (event) => {
@@ -46,24 +44,7 @@ class StreetlightMap {
     // Add zoom end event listener
     this.map.on("zoomend", () => this.handleZoom());
 
-    // Butuan City Barangays in Database -//
-    this.BTUbarangayCoords = {
-      "BTU-LIB": { lat: 8.945, lng: 125.528, name: "Libertad" },
-      "BTU-DBF": { lat: 8.952, lng: 125.532, name: "Doongan Baan Ferry" },
-      "BTU-BAN": { lat: 8.958, lng: 125.535, name: "Baan" },
-      "BTU-BON": { lat: 8.963, lng: 125.538, name: "Boning" },
-    };
-    //end Butuan Barangays in Database -//
-
-    // Surigao City Barangays in Database -//
-    this.SURbarangayCoords = {
-      "SUR-LUN": { lat: 9.782, lng: 125.485, name: "Luna" },
-      "SUR-WAW": { lat: 9.788, lng: 125.488, name: "Washington" },
-      "SUR-TIN": { lat: 9.792, lng: 125.492, name: "Tinio" },
-      "SUR-CAN": { lat: 9.795, lng: 125.495, name: "Canlanipa" },
-    };
-    //end Surigao Barangays in Database -//
-
+   
     // Random coordinates within Butuan and Surigao areas
     this.barangayCoords = {
       // Butuan City barangays (around 8.94-8.97, 125.52-125.54)
@@ -145,115 +126,7 @@ class StreetlightMap {
       BTU: { lat: 8.955, lng: 125.533, name: "Agusan del Norte" },
     };
 
-    //Provinces of Caraga Region -//
-
-    this.Car = {
-      ADN: { lat: 9.133, lng: 125.533, name: "Agusan del Norte" },
-      ADS: { lat: 9.787, lng: 125.49, name: "Surigao del Norte" },
-      AGS: { lat: 8.95, lng: 125.53, name: "Agusan del Sur" },
-      SUR: { lat: 9.787, lng: 125.49, name: "Surigao del Sur" },
-      DIN: { lat: 9.783, lng: 125.488, name: "Dinagat Islands" },
-    };
-
-    //end Provinces of Caraga Region -//
-
-    // Municipalities and Cities of Agusan del Norte -//
-    this.ADNCoords = {
-      CAB: { lat: 9.133, lng: 125.533, name: "Cabadbaran City" },
-      BTU: { lat: 8.955, lng: 125.533, name: "Butuan City" },
-      CAR: { lat: 9.783, lng: 125.488, name: "Carmen" },
-      BUE: { lat: 9.783, lng: 125.488, name: "Buenavista" },
-      JAB: { lat: 9.783, lng: 125.488, name: "Jabonga" },
-      KIT: { lat: 9.783, lng: 125.488, name: "Kitcharao" },
-      LAS: { lat: 9.783, lng: 125.488, name: "Las Nieves" },
-      MAG: { lat: 9.783, lng: 125.488, name: "Magallanes" },
-      NAS: { lat: 9.783, lng: 125.488, name: "Nasipit" },
-      RTR: { lat: 9.783, lng: 125.488, name: "Remedios T. Romualdez" },
-      SAN: { lat: 9.783, lng: 125.488, name: "Santiago" },
-      TAG: { lat: 9.783, lng: 125.488, name: "Tubay" },
-    };
-    //end  Municipalities and Cities of Agusan del Norte -//
-
-    // Municipalities of Agusan del Sur -//
-    this.ADSCoords = {
-      BAY: { lat: 8.95, lng: 125.53, name: "Bayugan City" },
-      BUN: { lat: 8.95, lng: 125.53, name: "Bunawan" },
-      ESP: { lat: 8.95, lng: 125.53, name: "Esperanza" },
-      LAP: { lat: 8.95, lng: 125.53, name: "La Paz" },
-      LOR: { lat: 8.95, lng: 125.53, name: "Loreto" },
-      PRO: { lat: 8.95, lng: 125.53, name: "Prosperidad" },
-      ROS: { lat: 8.95, lng: 125.53, name: "Rosario" },
-      SANF: { lat: 8.95, lng: 125.53, name: "San Francisco" },
-      SANL: { lat: 8.95, lng: 125.53, name: "San Luis" },
-      SANTJ: { lat: 8.95, lng: 125.53, name: "Santa Josefa" },
-      TAL: { lat: 8.95, lng: 125.53, name: "Talacogon" },
-      TREN: { lat: 8.95, lng: 125.53, name: "Trento" },
-      SIB: { lat: 8.95, lng: 125.53, name: "Sibagat" },
-      VER: { lat: 8.95, lng: 125.53, name: "Veruela" },
-    };
-    //end  Municipalities of Agusan del Sur -//
-
-    // Municipalities and Cities of Surigao del Norte -//
-    this.SDNCoords = {
-      SUR: { lat: 9.783, lng: 125.488, name: "Surigao City" },
-      DAP: { lat: 9.783, lng: 125.488, name: "Dapa" },
-      ALE: { lat: 9.783, lng: 125.488, name: "Alegria" },
-      BAC: { lat: 9.783, lng: 125.488, name: "Bacuag" },
-      BUR: { lat: 9.783, lng: 125.488, name: "Burgos" },
-      CLA: { lat: 9.783, lng: 125.488, name: "Claver" },
-      DELC: { lat: 9.783, lng: 125.488, name: "Del Carmen" },
-      GENL: { lat: 9.783, lng: 125.488, name: "General Luna" },
-      GIG: { lat: 9.783, lng: 125.488, name: "Gigaquit" },
-      MAI: { lat: 9.783, lng: 125.488, name: "Mainit" },
-      MAL: { lat: 9.783, lng: 125.488, name: "Malimono" },
-      PILA: { lat: 9.783, lng: 125.488, name: "Pilar" },
-      PLA: { lat: 9.783, lng: 125.488, name: "Placer" },
-      SANB: { lat: 9.783, lng: 125.488, name: "San Benito" },
-      SANF: { lat: 9.783, lng: 125.488, name: "San Francisco" },
-      SANI: { lat: 9.783, lng: 125.488, name: "San Isidro" },
-      SANTM: { lat: 9.783, lng: 125.488, name: "Santa Monica" },
-      SISO: { lat: 9.783, lng: 125.488, name: "Sison" },
-      SOCO: { lat: 9.783, lng: 125.488, name: "Socorro" },
-      TAGA: { lat: 9.783, lng: 125.488, name: "Tagana-an" },
-      TUB: { lat: 9.783, lng: 125.488, name: "Tubod" },
-    };
-    //end  Municipalities and Cities of Surigao del Norte -//
-
-    // Municipalities and Cities of Surigao del Sur -//
-    this.SDSCoords = {
-      BIS: { lat: 9.783, lng: 125.488, name: "Bislig City" },
-      TAN: { lat: 9.783, lng: 125.488, name: "Tandag City" },
-      BAR: { lat: 9.783, lng: 125.488, name: "Barobo" },
-      BAY: { lat: 9.783, lng: 125.488, name: "Bayabas" },
-      CAG: { lat: 9.783, lng: 125.488, name: "Cagwait" },
-      CAN: { lat: 9.783, lng: 125.488, name: "Cantilan" },
-      SDSCAR: { lat: 9.783, lng: 125.488, name: "Carmen" },
-      CARR: { lat: 9.783, lng: 125.488, name: "Carrascal" },
-      COR: { lat: 9.783, lng: 125.488, name: "Cortes" },
-      HIN: { lat: 9.783, lng: 125.488, name: "Hinatuan" },
-      LAN: { lat: 9.783, lng: 125.488, name: "Lanuza" },
-      LIA: { lat: 9.783, lng: 125.488, name: "Lianga" },
-      LING: { lat: 9.783, lng: 125.488, name: "Lingig" },
-      MAD: { lat: 9.783, lng: 125.488, name: "Madrid" },
-      MAR: { lat: 9.783, lng: 125.488, name: "Marihatag" },
-      SANA: { lat: 9.783, lng: 125.488, name: "San Agustin" },
-      SANM: { lat: 9.783, lng: 125.488, name: "San Miguel" },
-      TAG: { lat: 9.783, lng: 125.488, name: "Tagbina" },
-      TAGO: { lat: 9.783, lng: 125.488, name: "Tago" },
-    };
-    //end  Municipalities and Cities of Surigao del Sur -//
-
-    // Municipalities and Cities of Dinagat Island -//
-    this.DICoords = {
-      BAS: { lat: 9.783, lng: 125.488, name: "Basilisa" },
-      CAGD: { lat: 9.783, lng: 125.488, name: "Cagdianao" },
-      DINAG: { lat: 9.783, lng: 125.488, name: "Dinagat" },
-      LIBJ: { lat: 9.783, lng: 125.488, name: "Libjo" },
-      LORE: { lat: 9.783, lng: 125.488, name: "Loreto" },
-      SANJO: { lat: 9.783, lng: 125.488, name: "San Jose" },
-      TuBA: { lat: 9.783, lng: 125.488, name: "Tubajon" },
-    };
-    //end  Municipalities and Cities of Dinagat Island -//
+  
 
     this.setupMap();
     this.markers = new L.LayerGroup().addTo(this.map);
@@ -265,6 +138,11 @@ class StreetlightMap {
       city: 11, // City overview zoom level
       municipality: 14, // Municipality detail zoom level
     };
+
+    this.activeRegions = new Set();
+    this.geoJsonLayers = {};
+    this.geoJsonLayer = L.layerGroup(); // Don't add to map yet
+    this.setupRegionToggles();
   }
 
   handleZoom() {
@@ -303,6 +181,12 @@ class StreetlightMap {
       attribution:
         '&copy; <a href="https://github.com/AlienWolfX" target="_blank">Allen Cruiz</a>',
     }).addTo(this.map);
+
+    // Create a layer group for GeoJSON layers
+    this.geoJsonLayer = L.layerGroup();
+
+    // Remove the automatic loading of GeoJSON files
+    // Delete or comment out the geojsonFiles.forEach() section
   }
 
   async loadProvinces() {
@@ -509,17 +393,23 @@ class StreetlightMap {
       }),
     });
 
-    // Preserve click functionality
+    // Preserve click functionality with improved animation handling
     marker.on("click", () => {
+      // First start the fly animation
       this.map.flyTo([province.lat, province.lng], this.zoomLevels.city, {
         duration: 1.5,
         easeLinearity: 0.25,
       });
-      this.loadMunicipalities(province.code);
+
+      // Load municipalities after a slight delay to ensure smooth animation
+      setTimeout(() => {
+        this.loadMunicipalities(province.code);
+      }); // Match the duration of flyTo animation
     });
 
     // Add marker to the map
     this.cityMarkers.addLayer(marker);
+    return marker;
   }
 
   addMunicipalityMarker(municipality) {
@@ -651,9 +541,9 @@ class StreetlightMap {
     const container = L.DomUtil.create("div", "p-3");
     container.innerHTML = `
       <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
-      <div class="mb-2"><strong>Total:</strong>18</div>
-      <div class="mb-2"><strong>Status:</strong> Active 8 </div>
-      <div class="mb-2"><strong>Status:</strong> Inactive 10</div>
+      <div class="mb-2"><strong>Total:   </strong>  18</div>
+      <div class="mb-2"> Active    8 </div>
+      <div class="mb-2"> Inactive 10</div>
       <div class="d-flex justify-content-center">
         <button class="btn btn-sm btn-secondary mt-2 moredetails">More Details</button>
       </div>
@@ -710,47 +600,190 @@ class StreetlightMap {
     `;
   }
 
-  //-----------------------------------More-Details-Pop-Up----------------------------------/
-  showMoreDetailsStreetLightsPopup(streetlight) {
-    // Remove any existing popups to avoid duplication
-    const existingPopup = document.querySelector(".full-screen-popup");
-    if (existingPopup) {
-      document.body.removeChild(existingPopup);
+
+//-----------------------------------More-Details-Pop-Up----------------------------------/
+showMoreDetailsStreetLightsPopup(streetlight) {
+  const existingPopup = document.querySelector(".full-screen-popup");
+  if (existingPopup) {
+    document.body.removeChild(existingPopup);
+  }
+
+  const popupContainer = document.createElement("div");
+  popupContainer.className = "full-screen-popup justify-content-center";
+  popupContainer.id = "popup";
+
+  // Create close function in the scope
+  const closePopup = () => {
+    const popup = document.getElementById("popup");
+    if (popup) {
+      popup.remove();
     }
+  };
 
-    // Create the full-screen popup container
-    const popupContainer = document.createElement("div");
-    popupContainer.className =
-      "full-screen-popup d-flex position-fixed top-0 start-0 w-100 h-100 bg-white";
-    popupContainer.style.zIndex = "1050"; // Ensure it appears on top
-    popupContainer.style.overflowY = "auto";
+  const getLightbulbColor = (isActive) => {
+    return isActive ? '#edf050' : '#000000';
+  };
 
-    // Add the content inside the popup
-    popupContainer.innerHTML = `
-    <div class="popup-content ;">
-      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
-      <div class="mb-2"><i class="fas fa-map-marker-alt text-danger fa-2x"></i></strong>18</div>
-      <div class="mb-2"><strong>Status:</strong> Active 8 </div>
-      <div class="mb-2"><strong>Status:</strong> Inactive 10</div>
-      <div class="text-center mt-4">
-        <button class="btn btn-danger close-popup">Close</button>
+  popupContainer.innerHTML = `
+    <div class="popup-content">
+      <button class="close-icon btn-secondary" type="button">
+        <i class="fa-solid fa-times"></i>
+      </button>
+      <h4 class="fw-bold text-center mb-4">${streetlight.name} Streetlights</h4>
+      <div class="number-container mb-3">
+        <div class="number-square">
+          <i class="fa-solid fa-1"></i>
+        </div>
+        <div class="status-container">
+          <span class="ms-2"><strong>Status:</strong></span>
+          <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(true)}"></i></span>
+          <span class="ms-2"><strong class="me-1">Battery:</strong>Active</span>
+        </div>
+        <div class="button-container">
+          <button class="btn btn-sm btn-secondary viewmoredetails">View More Details</button>
+        </div>
+      </div>
+      <!-- Repeat for numbers 2-7 -->
+      ${[2,3,4,5,6,7].map(num => `
+        <div class="number-container mb-3">
+          <div class="number-square">
+            <i class="fa-solid fa-${num}"></i>
+          </div>
+          <div class="status-container">
+            <span class="ms-2"><strong>Status:</strong></span>
+            <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(false)}"></i></span>
+            <span class="ms-2"><strong class="me-1">Battery:</strong>Inactive</span>
+          </div>
+          <div class="button-container">
+            <button class="btn btn-sm btn-secondary viewmoredetails">View More Details</button>
+          </div>
+        </div>
+      `).join('')}
+      
+      <div class="close-button">
+        <button class="btn btn-danger" type="button">Close</button>
       </div>
     </div>
   `;
 
-    // Append to body
-    document.body.appendChild(popupContainer);
-
-    // Add event listener for closing the popup
-    setTimeout(() => {
-      const closeButton = popupContainer.querySelector(".close-popup");
-      if (closeButton) {
-        closeButton.addEventListener("click", () => {
-          document.body.removeChild(popupContainer);
-        });
+  // Add styles to head if not already present
+  if (!document.getElementById('popup-styles')) {
+    const styleSheet = document.createElement("style");
+    styleSheet.id = 'popup-styles';
+    styleSheet.textContent = `
+      .full-screen-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        z-index: 1050;
       }
-    }, 0);
+      .popup-content {
+        background: white;
+        max-width: 800px;
+        margin: auto;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding-top: 45px; /* Add more top padding to accommodate the close icon */
+        padding-bottom: 5px; /* Remove extra bottom padding */
+      }
+      .number-square {
+        width: 37px;
+        height: 37px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #000;
+        border-radius: 5px;
+        font-size: 18px;
+        font-weight: bold;
+        background-color: #1671cb;
+        color: white;
+      }
+      .number-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .icon-outside {
+        font-size: 40px;
+        color: #edf050;
+      }
+      .close-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 24px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 5px;
+        transition: color 0.3s ease;
+      }
+      .close-icon:hover {
+        color: #bb2d3b;
+      }
+      .close-button {
+        position: sticky;
+        bottom: 0;
+        width: 100%;
+        padding: 15px;
+        background: white;
+        text-align: center;
+      }
+      .number-container {
+        display: flex;
+        align-items: start;
+        gap: 8px;
+        position: relative;
+        padding-right: 150px; /* Make space for button */
+      }
+    
+      .status-container {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+        gap: 8px;
+      }
+    
+      .button-container {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+    
+      .viewmoredetails {
+        white-space: nowrap;
+      }
+    `;
+    document.head.appendChild(styleSheet);
   }
+  document.body.appendChild(popupContainer);
+
+  // Add event listeners after appending to DOM
+  const closeIcon = popupContainer.querySelector(".close-icon");
+  const closeButton = popupContainer.querySelector(".close-button .btn-danger");
+
+  // Add click handlers for both close buttons
+  closeIcon.addEventListener("click", closePopup);
+  closeButton.addEventListener("click", closePopup);
+
+  // Add click handler for the overlay
+  popupContainer.addEventListener("click", (e) => {
+    if (e.target === popupContainer) {
+      closePopup();
+    }
+  });
+}
 
   showMoreDetailsPopup(streetlight) {
     // Remove any existing popups to avoid duplication
@@ -769,7 +802,7 @@ class StreetlightMap {
     // Add the content inside the popup
     popupContainer.innerHTML = `
     <div class="popup-content ;">
-      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
+      <h4 class="fw-bold text-center mb-3">${streetlight.name} Street lights</h4>
       <div class="mb-2"><strong>Streetlight ID:</strong> ${
         streetlight.code
       }</div>
@@ -787,7 +820,7 @@ class StreetlightMap {
         streetlight.installationDate
       ).toLocaleDateString()}</div>
       <div class="text-center mt-4">
-        <button class="btn btn-danger close-popup">Close</button>
+        <button class="btn btn-secondary close-popup">Close</button>
       </div>
     </div>
   `;
@@ -901,5 +934,133 @@ class StreetlightMap {
     } catch (error) {
       console.error("Failed to update statistics:", error);
     }
+  }
+
+  setupRegionControls() {
+    document.querySelectorAll('[data-region]').forEach(element => {
+      element.addEventListener('click', (e) => {
+        e.preventDefault();
+        const region = e.currentTarget.dataset.region;
+        
+        if (this.activeRegions.has(region)) {
+          // Deactivate region
+          this.activeRegions.delete(region);
+          e.currentTarget.classList.remove('active-region');
+          if (this.geoJsonLayers[region]) {
+            this.geoJsonLayer.removeLayer(this.geoJsonLayers[region]);
+          }
+          e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye-slash text-muted';
+        } else {
+          // Activate region
+          this.activeRegions.add(region);
+          e.currentTarget.classList.add('active-region');
+          this.loadRegionGeoJson(region);
+          e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
+        }
+      });
+    });
+  }
+
+  loadRegionGeoJson(region) {
+    const regionFiles = {
+      BTU: 'agusandelnorte.geojson',
+      // Add more region mappings as needed
+    };
+
+    if (!regionFiles[region]) return;
+
+    fetch(`rsc/geojson/${regionFiles[region]}`)
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const geoJsonLayer = L.geoJSON(data, {
+          style: {
+            color: '#1671cb',
+            weight: 2,
+            fillOpacity: 0.3,
+            fillColor: '#1671cb'
+          },
+          pointToLayer: function(feature, latlng) {
+            return null;
+          },
+          onEachFeature: function(feature, layer) {
+            if (layer.setStyle) {
+              layer.setStyle({
+                clickable: false
+              });
+            }
+          }
+        });
+        
+        this.geoJsonLayers[region] = geoJsonLayer;
+        this.geoJsonLayer.addLayer(geoJsonLayer);
+      })
+      .catch(error => {
+        console.error(`Error loading GeoJSON for ${region}:`, error);
+      });
+  }
+
+  setupRegionToggles() {
+    document.querySelectorAll('[data-region]').forEach(element => {
+      element.addEventListener('click', (e) => {
+        e.preventDefault();
+        const region = e.currentTarget.dataset.region;
+        const geojsonFile = e.currentTarget.dataset.geojson;
+        
+        if (this.geoJsonLayers[region]) {
+          // If layer exists, toggle its visibility
+          if (this.map.hasLayer(this.geoJsonLayers[region])) {
+            this.map.removeLayer(this.geoJsonLayers[region]);
+            e.currentTarget.classList.remove('active-region');
+            e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye-slash text-muted';
+          } else {
+            this.geoJsonLayers[region].addTo(this.map);
+            e.currentTarget.classList.add('active-region');
+            e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
+          }
+        } else {
+          // Load GeoJSON if not already loaded
+          this.loadRegionGeoJson(region, geojsonFile, e.currentTarget);
+        }
+      });
+    });
+  }
+
+  loadRegionGeoJson(region, filename, element) {
+    fetch(`rsc/geojson/${filename}`)
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const geoJsonLayer = L.geoJSON(data, {
+          style: {
+            color: '#1671cb',
+            weight: 2,
+            fillOpacity: 0.1,
+            fillColor: '#1671cb'
+          },
+          pointToLayer: function(feature, latlng) {
+            return null;
+          },
+          onEachFeature: function(feature, layer) {
+            if (layer.setStyle) {
+              layer.setStyle({
+                clickable: false
+              });
+            }
+          }
+        });
+        
+        this.geoJsonLayers[region] = geoJsonLayer;
+        geoJsonLayer.addTo(this.map); // Add directly to map when toggled
+        element.classList.add('active-region');
+        element.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
+      })
+      .catch(error => {
+        console.error(`Error loading GeoJSON for ${region}:`, error);
+      });
   }
 }
