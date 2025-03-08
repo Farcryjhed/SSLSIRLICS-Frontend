@@ -1,486 +1,516 @@
 class StreetlightMap {
   constructor() {
-    // Add zoom level thresholds
     this.zoomLevels = {
-      city: 11, // City overview zoom level
-      municipality: 14, // Municipality detail zoom level
+      city: 11,
+      municipality: 14,
     };
 
-    this.map = L.map("map", {
-      zoomControl: false,
-    }).setView([9.215937, 125.981771], 9);
+    // Initialize properties
+    this.provinceMarkers = null;
+    this.municipalityMarkers = null;
+    this.barangayMarkers = null;
+    this.map = null;
 
-    // Create separate layer groups for different zoom levels
-    this.cityMarkers = new L.LayerGroup().addTo(this.map);
-    this.municipalityMarkers = new L.LayerGroup().addTo(this.map);
-    this.streetlightMarkers = new L.LayerGroup().addTo(this.map);
-    this.polygonLayer = new L.LayerGroup().addTo(this.map); // Layer for polygons
-
-// Steps to Display Coordinates on Hover -//
-// Event listener for mouse movement to update coordinates
-this.map.on("mousemove", (e) => {
-  const coordinatesText = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`;
-  document.getElementById("coordinates").innerText = coordinatesText;
-});
-
-    // Function to copy coordinates when pressing Ctrl + C
-    document.addEventListener("keydown", (event) => {
-      if (event.ctrlKey && event.key === "c") {
-        const coordinatesText =
-          document.getElementById("coordinates").innerText;
-
-        // Copy to clipboard
-        navigator.clipboard
-          .writeText(coordinatesText)
-          .then(() => {})
-          .catch((err) => {
-            console.error("Failed to copy: ", err);
-          });
-      }
-    });
-
-    //-//
-
-    // Add zoom end event listener
-    this.map.on("zoomend", () => this.handleZoom());
-
-   
-    // Random coordinates within Butuan and Surigao areas
-    this.barangayCoords = {
-      // Butuan City barangays (around 8.94-8.97, 125.52-125.54)
-      "BTU-LIB": { lat: 8.945, lng: 125.528, name: "Libertad" },
-      "BTU-DBF": { lat: 8.952, lng: 125.532, name: "Doongan Baan Ferry" },
-      "BTU-BAN": { lat: 8.958, lng: 125.535, name: "Baan" },
-      "BTU-BON": { lat: 8.963, lng: 125.538, name: "Boning" },
-
-      // Surigao City barangays (around 9.78-9.80, 125.48-125.50)
-      "SUR-LUN": { lat: 9.782, lng: 125.485, name: "Luna" },
-      "SUR-WAW": { lat: 9.788, lng: 125.488, name: "Washington" },
-      "SUR-TIN": { lat: 9.792, lng: 125.492, name: "Tinio" },
-      "SUR-CAN": {
-        lat: 9.783949593493343,
-        lng: 125.49870493222036,
-        name: "Canlanipa",
-      },
-    };
-
-    // Municipality centers
-    this.municipalityCoords = {
-      BTU: { lat: 8.955, lng: 125.533, name: "Butuan City" },
-      SUR: { lat: 9.797, lng: 125.489, name: "Surigao City" },
-    };
-
-    // Create coordinate ranges for each barangay
-    this.barangayRanges = {
-      "BTU-LIB": {
-        lat: { min: 8.944, max: 8.946 },
-        lng: { min: 125.527, max: 125.529 },
-        name: "Libertad",
-      },
-      "BTU-DBF": {
-        lat: { min: 8.951, max: 8.953 },
-        lng: { min: 125.531, max: 125.533 },
-        name: "Doongan Baan Ferry",
-      },
-      "BTU-BAN": {
-        lat: { min: 8.957, max: 8.959 },
-        lng: { min: 125.534, max: 125.536 },
-        name: "Baan",
-      },
-      "BTU-BON": {
-        lat: { min: 8.962, max: 8.964 },
-        lng: { min: 125.537, max: 125.539 },
-        name: "Boning",
-      },
-      // Surigao City barangays
-      "SUR-LUN": {
-        lat: { min: 9.781, max: 9.783 },
-        lng: { min: 125.484, max: 125.486 },
-        name: "Luna",
-      },
-      "SUR-WAW": {
-        lat: { min: 9.787, max: 9.789 },
-        lng: { min: 125.487, max: 125.489 },
-        name: "Washington",
-      },
-      "SUR-TIN": {
-        lat: { min: 9.791, max: 9.793 },
-        lng: { min: 125.491, max: 125.493 },
-        name: "Tinio",
-      },
-      "SUR-CAN": {
-        lat: { min: 9.783949593493343, max: 9.783949593493344 },
-        lng: { min: 125.49870493222036, max: 125.49870493222037 },
-        name: "Canlanipa",
-      },
-    };
-
-    // Helper function to generate random coordinates within a range
-    this.getRandomCoordinate = (min, max) => {
-      return Math.random() * (max - min) + min;
-    };
-
-    // Add province coordinates
-    this.provinceCoords = {
-      SUR: { lat: 9.787, lng: 125.49, name: "Surigao del Norte" },
-      BTU: { lat: 8.955, lng: 125.533, name: "Agusan del Norte" },
-    };
-
-  
-
-    this.setupMap();
-    this.markers = new L.LayerGroup().addTo(this.map);
-    this.loadProvinces(); // Change initial load to provinces
-    this.updateStatistics(); // Add this line
-
-    // Add zoom levels configuration
-    this.zoomLevels = {
-      city: 11, // City overview zoom level
-      municipality: 14, // Municipality detail zoom level
-    };
-
-    this.activeRegions = new Set();
+    // Initialize GeoJSON layers
+    this.geoJsonLayer = null;
     this.geoJsonLayers = {};
-    this.geoJsonLayer = L.layerGroup(); // Don't add to map yet
-    this.setupRegionToggles();
-  }
+    this.activeRegions = new Set();
 
-  handleZoom() {
-    const currentZoom = this.map.getZoom();
-
-    if (currentZoom < 9) {
-      // Show province markers
-      this.map.removeLayer(this.municipalityMarkers);
-      this.map.removeLayer(this.streetlightMarkers);
-      this.cityMarkers.addTo(this.map);
-      // Reload provinces if they're not visible
-      if (this.cityMarkers.getLayers().length === 0) {
-        this.loadProvinces();
-      }
-    } else if (currentZoom < this.zoomLevels.city) {
-      // Show city markers
-      this.cityMarkers.addTo(this.map);
-      this.map.removeLayer(this.municipalityMarkers);
-      this.map.removeLayer(this.streetlightMarkers);
-    } else if (currentZoom < this.zoomLevels.municipality) {
-      // Show municipality markers
-      this.map.removeLayer(this.cityMarkers);
-      this.municipalityMarkers.addTo(this.map);
-      this.map.removeLayer(this.streetlightMarkers);
-    } else {
-      // Show streetlight markers
-      this.map.removeLayer(this.cityMarkers);
-      this.map.removeLayer(this.municipalityMarkers);
-      this.streetlightMarkers.addTo(this.map);
-    }
+    // Start the initialization
+    this.loadCoordinates();
   }
 
   setupMap() {
-    L.control.zoom({ position: "topright" }).addTo(this.map);
+    // Add tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
-        '&copy; <a href="https://github.com/AlienWolfX" target="_blank">Allen Cruiz</a>',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
 
-    // Create a layer group for GeoJSON layers
-    this.geoJsonLayer = L.layerGroup();
-
-    // Remove the automatic loading of GeoJSON files
-    // Delete or comment out the geojsonFiles.forEach() section
+    // Add zoom control to top right
+    L.control
+      .zoom({
+        position: "topright",
+      })
+      .addTo(this.map);
   }
 
-  async loadProvinces() {
+  async loadCoordinates() {
     try {
-      console.log("Loading provinces...");
-      const data = await StreetlightQueries.getAllData();
-      console.log("Provinces data received:", data);
+      const response = await fetch("rsc/coordinates.json");
+      this.coordinates = await response.json();
 
-      if (data.status === "success") {
-        this.clearMarkers();
-
-        // Reset zoom to overview level
-        this.map.flyTo([9.215937, 125.981771], 8.5, {
-          duration: 1.5,
-          easeLinearity: 0.25,
-        });
-
-        // Group data by province code (first 3 letters)
-        const groupedData = data.data.reduce((acc, item) => {
-          const provinceCode = item.socid.substring(0, 3);
-          if (!acc[provinceCode]) {
-            acc[provinceCode] = {
-              code: provinceCode,
-              ...this.provinceCoords[provinceCode],
-              totalStreetlights: 0,
-              streetlights: [],
-            };
-          }
-          acc[provinceCode].totalStreetlights++;
-          acc[provinceCode].streetlights.push(item);
-          return acc;
-        }, {});
-
-        // Add markers for each province with click event to zoom
-        Object.values(groupedData).forEach((province) => {
-          const marker = this.addProvinceMarker(province);
-        });
-      }
+      // Initialize map after loading coordinates
+      this.initializeMap();
     } catch (error) {
-      console.error("Failed to load provinces:", error);
+      console.error("Failed to load coordinates:", error);
     }
   }
 
-  async loadMunicipalities(provinceCode = null) {
-    try {
-      console.log(
-        `Loading municipalities${provinceCode ? ` for ${provinceCode}` : ""}...`
-      );
-      const data = await StreetlightQueries.getMunicipalityData(provinceCode);
-      console.log("Municipalities data received:", data);
+  initializeMap() {
+    // Find center point from coordinates
+    const center = this.calculateMapCenter();
 
-      if (data.status === "success") {
-        this.clearMarkers();
+    // Create the map
+    this.map = L.map("map", {
+      zoomControl: false,
+    }).setView([center.lat, center.long], 9);
 
-        // Group data by municipality code (BTU, SUR, etc.)
-        const groupedData = data.data.reduce((acc, item) => {
-          const municipalityCode = item.socid.split("-")[0];
-          if (!acc[municipalityCode]) {
-            acc[municipalityCode] = {
-              code: municipalityCode,
-              ...this.municipalityCoords[municipalityCode],
-              totalStreetlights: 0,
-              streetlights: [],
-            };
-          }
-          acc[municipalityCode].totalStreetlights++;
-          acc[municipalityCode].streetlights.push(item);
-          return acc;
-        }, {});
+    // Setup the map layers
+    this.setupMap();
 
-        console.log(
-          `Adding ${Object.keys(groupedData).length} municipality markers`
+    // Create layer groups
+    this.provinceMarkers = new L.LayerGroup().addTo(this.map);
+    this.municipalityMarkers = new L.LayerGroup().addTo(this.map);
+    this.barangayMarkers = new L.LayerGroup().addTo(this.map);
+    this.geoJsonLayer = new L.LayerGroup().addTo(this.map); // Add GeoJSON layer group
+
+    // Setup event handlers
+    this.setupMouseCoordinates();
+    this.map.on("zoomend", () => this.handleZoom());
+    this.setupRegionControls(); // Add this line to initialize region controls
+
+    // Add initial province markers
+    this.addProvinceMarkers();
+  }
+
+  calculateMapCenter() {
+    let totalLat = 0;
+    let totalLong = 0;
+    let count = 0;
+
+    // Only include provinces with valid coordinates and data
+    for (const province in this.coordinates) {
+      const data = this.coordinates[province];
+      if (
+        data.lat &&
+        data.long &&
+        data.municipalities &&
+        Object.keys(data.municipalities).length > 0
+      ) {
+        totalLat += data.lat;
+        totalLong += data.long;
+        count++;
+      }
+    }
+
+    return {
+      lat: count > 0 ? totalLat / count : 8.4542, // Default center if no valid provinces
+      long: count > 0 ? totalLong / count : 124.6319,
+    };
+  }
+
+  addProvinceMarkers() {
+    for (const province in this.coordinates) {
+      const data = this.coordinates[province];
+
+      // Only create marker if province has coordinates and municipalities
+      if (
+        data.lat &&
+        data.long &&
+        data.municipalities &&
+        Object.keys(data.municipalities).length > 0
+      ) {
+        const marker = L.marker([data.lat, data.long], {
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: '<i class="fas fa-building text-primary fa-3x"></i>',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+          }),
+        });
+
+        marker.bindPopup(
+          this.createProvincePopup({
+            name: province,
+            code: data.province_code,
+          })
         );
 
-        // Add markers for each municipality
-        Object.values(groupedData).forEach((municipality) => {
-          console.log("Adding municipality marker:", municipality);
-          if (municipality.lat && municipality.lng) {
-            // Add both city and municipality markers
-            this.addMunicipalityMarker(municipality);
-          } else {
-            console.warn(
-              `Missing coordinates for municipality: ${municipality.code}`
-            );
-          }
+        marker.on("click", () => {
+          this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+          this.showMunicipalityMarkers(province);
         });
 
-        // Update marker visibility based on current zoom
-        this.handleZoom();
-      } else {
-        console.warn("Failed to load municipalities:", data.message);
+        this.provinceMarkers.addLayer(marker);
       }
-    } catch (error) {
-      console.error("Failed to load municipalities:", error);
     }
   }
 
-  async loadBarangays(municipality) {
+  // Update the getMunicipalityCodes method
+  async getMunicipalityCodes() {
     try {
-      console.log(`Loading barangays for ${municipality}...`);
-      const data = await StreetlightQueries.getBarangayData(municipality);
-      console.log("Barangay data received:", data);
-
+      const data = await StreetlightQueries.getAllData();
       if (data.status === "success") {
-        this.clearMarkers();
-        console.log(`Adding ${data.data.length} barangay markers`);
-
-        // Group by barangay first
-        const groupedByBarangay = {};
-        data.data.forEach((item) => {
-          // Get just the barangay code part (e.g., 'BTU-LIB' from 'BTU-LIB001')
-          const barangayCode = item.socid.match(/([A-Z]{3}-[A-Z]{3})/)[0];
-          if (!groupedByBarangay[barangayCode]) {
-            const coords = this.barangayCoords[barangayCode];
-            if (coords) {
-              groupedByBarangay[barangayCode] = {
-                code: barangayCode,
-                name: coords.name,
-                lat: coords.lat,
-                lng: coords.lng,
-                streetlights: [],
-                totalStreetlights: 0,
-              };
+        // Extract unique municipality codes from SOCIDs (first 3 characters)
+        const codes = new Set();
+        data.data.forEach((reading) => {
+          // Check if reading has a valid SOCID before trying to split it
+          if (reading && reading.SOCID && typeof reading.SOCID === "string") {
+            const parts = reading.SOCID.split("-");
+            if (parts.length > 0) {
+              const municipalityCode = parts[0];
+              codes.add(municipalityCode);
             }
           }
-          if (groupedByBarangay[barangayCode]) {
-            groupedByBarangay[barangayCode].streetlights.push(item);
-            groupedByBarangay[barangayCode].totalStreetlights++;
-          }
         });
 
-        // Add markers for each barangay (color red)
-        Object.values(groupedByBarangay).forEach((barangay) => {
-          if (barangay.lat && barangay.lng) {
-            // Create a marker for the barangay center
-            const barangayMarker = L.marker([barangay.lat, barangay.lng], {
-              icon: L.divIcon({
-                className: "custom-marker",
-                html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
-                iconSize: [30, 30],
-                iconAnchor: [12, 30],
-              }),
-            });
-
-            // Add popup with barangay info
-            barangayMarker.bindPopup(
-              this.createBarangayPopup({
-                name: barangay.name,
-                code: barangay.code,
-                totalStreetlights: barangay.totalStreetlights,
-                date: barangay.streetlights[0]?.date,
-                batsoc: this.calculateAverageBattery(barangay.streetlights),
-              })
-            );
-
-            this.streetlightMarkers.addLayer(barangayMarker);
-          }
-        });
-
-        // Call handleZoom to update visibility
-        this.handleZoom();
+        console.log("Found municipality codes:", Array.from(codes)); // Debug log
+        return codes;
       }
+      return new Set();
     } catch (error) {
-      console.error(`Failed to load barangays for ${municipality}:`, error);
+      console.error("Failed to get municipality codes:", error);
+      return new Set();
     }
   }
 
-  clearMarkers() {
-    this.cityMarkers.clearLayers();
+  // Add new method to check if municipality has streetlights
+  async hasStreetlights(municipalityCode) {
+    try {
+      const data = await StreetlightQueries.getAllData();
+      if (data.status === "success") {
+        return data.data.some((reading) => {
+          return (
+            reading &&
+            reading.SOCID &&
+            reading.SOCID.startsWith(municipalityCode)
+          );
+        });
+      }
+      return false;
+    } catch (error) {
+      console.error(
+        `Error checking streetlights for ${municipalityCode}:`,
+        error
+      );
+      return false;
+    }
+  }
+
+  // Update getBarangayCode method to handle lowercase socid
+  getBarangayCode(socid) {
+    if (!socid || typeof socid !== "string") {
+      console.log(`Invalid SOCID: ${socid}`);
+      return null;
+    }
+
+    const parts = socid.split("-");
+    if (parts.length !== 2) {
+      console.log(`Invalid SOCID format: ${socid} (expected format: XXX-YYYY)`);
+      return null;
+    }
+
+    const barangayCode = parts[1].substring(0, 3);
+    console.log(`SOCID: ${socid} -> Barangay Code: ${barangayCode}`);
+    return barangayCode;
+  }
+
+  // Add new method to get streetlight count for a barangay
+  async getBarangayStreetlightCount(barangayCode) {
+    try {
+      const data = await StreetlightQueries.getAllData();
+      if (data.status === "success" && Array.isArray(data.data)) {
+        return data.data.filter((reading) => {
+          const parts = reading.socid?.split("-");
+          return parts && parts[1] && parts[1].startsWith(barangayCode);
+        }).length;
+      }
+      return 0;
+    } catch (error) {
+      console.error(
+        `Error getting streetlight count for ${barangayCode}:`,
+        error
+      );
+      return 0;
+    }
+  }
+
+  // Update the getBarangayCoordinates method to match your JSON structure
+  getBarangayCoordinates(barangayCode, province) {
+    // Search through all municipalities and barangays
+    for (const municipalityName in this.coordinates[province].municipalities) {
+      const municipality =
+        this.coordinates[province].municipalities[municipalityName];
+      const barangays = municipality.barangays;
+
+      for (const barangayName in barangays) {
+        const barangay = barangays[barangayName];
+        // Match using barangay_code instead of code
+        if (barangay.barangay_code === barangayCode) {
+          return {
+            lat: barangay.lat,
+            long: barangay.long,
+            name: barangayName,
+            municipality: municipalityName,
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  // Add new method to get municipality code from SOCID
+  getMunicipalityCodeFromSOCID(socid) {
+    if (!socid || typeof socid !== "string") {
+      console.log(`Invalid SOCID: ${socid}`);
+      return null;
+    }
+
+    const parts = socid.split("-");
+    if (parts.length !== 2) {
+      console.log(`Invalid SOCID format: ${socid} (expected format: XXX-YYYY)`);
+      return null;
+    }
+
+    return parts[0]; // Return the municipality code prefix
+  }
+
+  // Update showMunicipalityMarkers to filter by municipality code
+  async showMunicipalityMarkers(province) {
     this.municipalityMarkers.clearLayers();
-    this.streetlightMarkers.clearLayers();
-  }
+    console.log("Showing municipality markers for province:", province);
 
-  //    SUR: { lat: 9.561427, lng: 125.783977, name: "Surigao del Norte" },
-  // BTU: { lat: 8.879704, lng: 125.48, name: "Agusan del Norte" },
+    try {
+      // Get all streetlight data first
+      const streetlightData = await StreetlightQueries.getAllData();
+      if (streetlightData.status !== "success") {
+        console.error("Failed to fetch streetlight data");
+        return;
+      }
 
-  addProvinceMarker(province) {
-    if (!province.lat || !province.lng) {
-      console.error("❌ Invalid coordinates for province:", province);
-      return;
-    }
+      console.log("Raw streetlight data:", streetlightData.data);
 
-    // Define custom icon positions for each province
-    const customIconPositions = {
-      BTU: { iconSize: [50, 50], iconAnchor: [27, 21] }, // Example
-      SUR: { iconSize: [40, 40], iconAnchor: [-62.25, -18] }, // Example
-
-      // Add more as needed
-    };
-
-    // Get custom icon settings or use default
-    const { iconSize, iconAnchor } = customIconPositions[province.code] || {
-      iconSize: [40, 40],
-      iconAnchor: [13, 40],
-    };
-
-    // Create marker with adjustable icon position
-    const marker = L.marker([province.lat, province.lng], {
-      icon: L.divIcon({
-        className: "custom-marker",
-        html: '<i class="fas fa-building text-primary fa-3x"></i>',
-        iconSize: iconSize,
-        iconAnchor: iconAnchor,
-      }),
-    });
-
-    // Preserve click functionality with improved animation handling
-    marker.on("click", () => {
-      // First start the fly animation
-      this.map.flyTo([province.lat, province.lng], this.zoomLevels.city, {
-        duration: 1.5,
-        easeLinearity: 0.25,
+      // Extract municipality codes from SOCIDs
+      const activeMunicipalityCodes = new Set();
+      streetlightData.data.forEach((reading) => {
+        if (reading?.socid) {
+          const parts = reading.socid.split("-");
+          if (parts.length === 2) {
+            // The first part (e.g., 'BTU', 'CAR') is the municipality code
+            const municipalityCode = parts[0];
+            activeMunicipalityCodes.add(municipalityCode);
+            console.log(
+              `Found municipality code: ${municipalityCode} from SOCID: ${reading.socid}`
+            );
+          }
+        }
       });
 
-      // Load municipalities after a slight delay to ensure smooth animation
-      setTimeout(() => {
-        this.loadMunicipalities(province.code);
-      }); // Match the duration of flyTo animation
-    });
+      console.log(
+        `Active municipality codes:`,
+        Array.from(activeMunicipalityCodes)
+      );
 
-    // Add marker to the map
-    this.cityMarkers.addLayer(marker);
-    return marker;
-  }
+      // Get municipality data from coordinates
+      const provinceData = this.coordinates[province];
+      if (!provinceData || !provinceData.municipalities) {
+        console.error("Invalid province data:", provinceData);
+        return;
+      }
 
-  addMunicipalityMarker(municipality) {
-    if (!municipality.lat || !municipality.lng) {
-      console.error("Invalid coordinates for municipality:", municipality);
-      return;
-    }
-    // municipality tulo ka
-    const marker = L.marker([municipality.lat, municipality.lng], {
-      icon: L.divIcon({
-        className: "custom-marker",
-        html: '<i class="fas fa-city text-primary fa-3x"></i>',
-        iconSize: [30, 30],
-        iconAnchor: [17, 34],
-      }),
-    });
+      // Add markers for municipalities that have matching codes
+      for (const municipalityName in provinceData.municipalities) {
+        const municipalityData = provinceData.municipalities[municipalityName];
+        console.log(
+          `Checking municipality: ${municipalityName}`,
+          municipalityData
+        );
 
-    marker.on("click", () => {
-      // Zoom to municipality level
-      this.map.flyTo(
-        [municipality.lat, municipality.lng],
-        this.zoomLevels.municipality,
-        {
-          duration: 1.5,
-          easeLinearity: 0.25,
+        // Skip if no valid coordinates or municipality code
+        if (
+          !municipalityData.lat ||
+          !municipalityData.long ||
+          !municipalityData.municipality_code
+        ) {
+          console.warn(`Missing data for municipality: ${municipalityName}`);
+          continue;
         }
-      );
-      this.loadBarangays(municipality.code);
-    });
 
-    this.municipalityMarkers.addLayer(marker);
+        // Check if this municipality has any matching streetlights
+        const hasMatches = activeMunicipalityCodes.has(
+          municipalityData.municipality_code
+        );
+        console.log(
+          `Municipality ${municipalityName} (${municipalityData.municipality_code}) matches:`,
+          hasMatches
+        );
 
-    // Add a city marker at a higher zoom level
-    const cityMarker = L.marker([municipality.lat, municipality.lng], {
-      icon: L.divIcon({
-        className: "custom-marker",
-        html: '<i class="fas fa-city text-primary fa-3x"></i>',
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-      }),
-    });
+        if (!hasMatches) {
+          console.log(
+            `Skipping ${municipalityName} - no matching streetlights`
+          );
+          continue;
+        }
 
-    cityMarker.on("click", () => {
-      this.map.flyTo(
-        [municipality.lat, municipality.lng],
-        this.zoomLevels.city,
-        { duration: 1.5, easeLinearity: 0.25 }
-      );
-      this.loadBarangays(municipality.code);
-    });
+        // Get streetlight count for this municipality
+        const streetlightCount = streetlightData.data.filter((reading) => {
+          if (!reading?.socid) return false;
+          const parts = reading.socid.split("-");
+          return (
+            parts.length === 2 &&
+            parts[0] === municipalityData.municipality_code
+          );
+        }).length;
 
-    this.cityMarkers.addLayer(cityMarker);
+        console.log(
+          `Found ${streetlightCount} streetlights for ${municipalityName}`
+        );
+
+        // Create marker
+        const marker = L.marker([municipalityData.lat, municipalityData.long], {
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: '<i class="fas fa-map-marker-alt text-primary fa-2x"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+          }),
+        });
+
+        const popupContent = `
+                <div class="p-3">
+                    <h6 class="fw-bold mb-2">${municipalityName}</h6>
+                    <p class="mb-2">Total Streetlights: ${streetlightCount}</p>
+                    <button class="btn btn-sm btn-primary view-details">View Details</button>
+                </div>
+            `;
+
+        marker.bindPopup(popupContent);
+        marker.on("popupopen", (e) => {
+          const popup = e.popup;
+          const button = popup._contentNode.querySelector(".view-details");
+          if (button) {
+            button.addEventListener("click", () => {
+              this.showBarangayMarkers(province, municipalityName);
+              this.map.flyTo(
+                [municipalityData.lat, municipalityData.long],
+                this.zoomLevels.municipality
+              );
+            });
+          }
+        });
+
+        this.municipalityMarkers.addLayer(marker);
+        console.log(`Added marker for ${municipalityName}`);
+      }
+    } catch (error) {
+      console.error("Error showing municipality markers:", error);
+    }
   }
 
-  addBarangayMarker(barangay) {
-    if (!barangay.lat || !barangay.lng) {
-      console.error("Invalid coordinates for barangay:", barangay);
-      return;
+  async showBarangayMarkers(province, municipality) {
+    this.barangayMarkers.clearLayers();
+    console.log("Showing barangay markers for:", province, municipality);
+
+    try {
+      // Get barangays from coordinates
+      const barangays =
+        this.coordinates[province].municipalities[municipality].barangays;
+
+      // Get all streetlight data
+      const streetlightData = await StreetlightQueries.getAllData();
+      if (streetlightData.status !== "success") {
+        console.error("Failed to fetch streetlight data");
+        return;
+      }
+
+      // Create a Set of barangay codes that have streetlights
+      const activeBarangayCodes = new Set();
+      streetlightData.data.forEach((reading) => {
+        if (reading?.socid) {
+          const parts = reading.socid.split("-");
+          if (parts.length === 2) {
+            const barangayCode = parts[1].substring(0, 3);
+            activeBarangayCodes.add(barangayCode);
+          }
+        }
+      });
+
+      console.log("Active barangay codes:", Array.from(activeBarangayCodes));
+
+      // Add markers only for barangays that have streetlights
+      for (const barangayName in barangays) {
+        const data = barangays[barangayName];
+
+        // Skip if no valid coordinates or barangay code
+        if (!data?.lat || !data?.long || !data?.barangay_code) {
+          continue;
+        }
+
+        // Skip if barangay has no streetlights
+        if (!activeBarangayCodes.has(data.barangay_code)) {
+          console.log(`Skipping ${barangayName} - no streetlights found`);
+          continue;
+        }
+
+        // Get streetlight count for this barangay
+        const streetlightCount = streetlightData.data.filter((reading) =>
+          reading?.socid?.split("-")[1]?.startsWith(data.barangay_code)
+        ).length;
+
+        console.log(
+          `Creating marker for ${barangayName} with ${streetlightCount} streetlights`
+        );
+
+        const marker = L.marker([data.lat, data.long], {
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+          }),
+        });
+
+        marker.bindPopup(
+          this.createBarangayPopup({
+            name: barangayName,
+            municipality: municipality,
+            province: province,
+            totalStreetlights: streetlightCount,
+          })
+        );
+
+        this.barangayMarkers.addLayer(marker);
+      }
+
+      // Make sure the layer is added to the map
+      if (!this.map.hasLayer(this.barangayMarkers)) {
+        this.barangayMarkers.addTo(this.map);
+      }
+    } catch (error) {
+      console.error("Error showing barangay markers:", error);
     }
+  }
 
-    const marker = L.marker([barangay.lat, barangay.lng], {
-      icon: L.divIcon({
-        className: "custom-marker",
-        html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 30],
-      }),
+  handleZoom() {
+    const zoom = this.map.getZoom();
+
+    if (zoom < 9) {
+      this.map.removeLayer(this.municipalityMarkers);
+      this.map.removeLayer(this.barangayMarkers);
+      this.provinceMarkers.addTo(this.map);
+    } else if (zoom < this.zoomLevels.city) {
+      this.provinceMarkers.addTo(this.map);
+      this.map.removeLayer(this.municipalityMarkers);
+      this.map.removeLayer(this.barangayMarkers);
+    } else if (zoom < this.zoomLevels.municipality) {
+      this.map.removeLayer(this.provinceMarkers);
+      this.municipalityMarkers.addTo(this.map);
+      this.map.removeLayer(this.barangayMarkers);
+    } else {
+      this.map.removeLayer(this.provinceMarkers);
+      this.map.removeLayer(this.municipalityMarkers);
+      this.barangayMarkers.addTo(this.map);
+    }
+  }
+
+  setupMouseCoordinates() {
+    this.map.on("mousemove", (e) => {
+      const coordinatesText = `Lat: ${e.latlng.lat.toFixed(
+        6
+      )}, Lng: ${e.latlng.lng.toFixed(6)}`;
+      document.getElementById("coordinates").innerText = coordinatesText;
     });
-
-    marker.bindPopup(this.createBarangayPopup(barangay));
-    this.streetlightMarkers.addLayer(marker);
   }
 
   createProvincePopup(province) {
@@ -600,31 +630,30 @@ this.map.on("mousemove", (e) => {
     `;
   }
 
-
-//-----------------------------------More-Details-Pop-Up----------------------------------/
-showMoreDetailsStreetLightsPopup(streetlight) {
-  const existingPopup = document.querySelector(".full-screen-popup");
-  if (existingPopup) {
-    document.body.removeChild(existingPopup);
-  }
-
-  const popupContainer = document.createElement("div");
-  popupContainer.className = "full-screen-popup justify-content-center";
-  popupContainer.id = "popup";
-
-  // Create close function in the scope
-  const closePopup = () => {
-    const popup = document.getElementById("popup");
-    if (popup) {
-      popup.remove();
+  //-----------------------------------More-Details-Pop-Up----------------------------------/
+  showMoreDetailsStreetLightsPopup(streetlight) {
+    const existingPopup = document.querySelector(".full-screen-popup");
+    if (existingPopup) {
+      document.body.removeChild(existingPopup);
     }
-  };
 
-  const getLightbulbColor = (isActive) => {
-    return isActive ? '#edf050' : '#000000';
-  };
+    const popupContainer = document.createElement("div");
+    popupContainer.className = "full-screen-popup justify-content-center";
+    popupContainer.id = "popup";
 
-  popupContainer.innerHTML = `
+    // Create close function in the scope
+    const closePopup = () => {
+      const popup = document.getElementById("popup");
+      if (popup) {
+        popup.remove();
+      }
+    };
+
+    const getLightbulbColor = (isActive) => {
+      return isActive ? "#edf050" : "#000000";
+    };
+
+    popupContainer.innerHTML = `
     <div class="popup-content">
       <button class="close-icon btn-secondary" type="button">
         <i class="fa-solid fa-times"></i>
@@ -636,7 +665,9 @@ showMoreDetailsStreetLightsPopup(streetlight) {
         </div>
         <div class="status-container">
           <span class="ms-2"><strong>Status:</strong></span>
-          <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(true)}"></i></span>
+          <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(
+            true
+          )}"></i></span>
           <span class="ms-2"><strong class="me-1">Battery:</strong>Active</span>
         </div>
         <div class="button-container">
@@ -644,21 +675,27 @@ showMoreDetailsStreetLightsPopup(streetlight) {
         </div>
       </div>
       <!-- Repeat for numbers 2-7 -->
-      ${[2,3,4,5,6,7].map(num => `
+      ${[2, 3, 4, 5, 6, 7]
+        .map(
+          (num) => `
         <div class="number-container mb-3">
           <div class="number-square">
             <i class="fa-solid fa-${num}"></i>
           </div>
           <div class="status-container">
             <span class="ms-2"><strong>Status:</strong></span>
-            <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(false)}"></i></span>
+            <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(
+              false
+            )}"></i></span>
             <span class="ms-2"><strong class="me-1">Battery:</strong>Inactive</span>
           </div>
           <div class="button-container">
             <button class="btn btn-sm btn-secondary viewmoredetails">View More Details</button>
           </div>
         </div>
-      `).join('')}
+      `
+        )
+        .join("")}
       
       <div class="close-button">
         <button class="btn btn-danger" type="button">Close</button>
@@ -666,11 +703,11 @@ showMoreDetailsStreetLightsPopup(streetlight) {
     </div>
   `;
 
-  // Add styles to head if not already present
-  if (!document.getElementById('popup-styles')) {
-    const styleSheet = document.createElement("style");
-    styleSheet.id = 'popup-styles';
-    styleSheet.textContent = `
+    // Add styles to head if not already present
+    if (!document.getElementById("popup-styles")) {
+      const styleSheet = document.createElement("style");
+      styleSheet.id = "popup-styles";
+      styleSheet.textContent = `
       .full-screen-popup {
         position: fixed;
         top: 0;
@@ -765,25 +802,27 @@ showMoreDetailsStreetLightsPopup(streetlight) {
         white-space: nowrap;
       }
     `;
-    document.head.appendChild(styleSheet);
-  }
-  document.body.appendChild(popupContainer);
-
-  // Add event listeners after appending to DOM
-  const closeIcon = popupContainer.querySelector(".close-icon");
-  const closeButton = popupContainer.querySelector(".close-button .btn-danger");
-
-  // Add click handlers for both close buttons
-  closeIcon.addEventListener("click", closePopup);
-  closeButton.addEventListener("click", closePopup);
-
-  // Add click handler for the overlay
-  popupContainer.addEventListener("click", (e) => {
-    if (e.target === popupContainer) {
-      closePopup();
+      document.head.appendChild(styleSheet);
     }
-  });
-}
+    document.body.appendChild(popupContainer);
+
+    // Add event listeners after appending to DOM
+    const closeIcon = popupContainer.querySelector(".close-icon");
+    const closeButton = popupContainer.querySelector(
+      ".close-button .btn-danger"
+    );
+
+    // Add click handlers for both close buttons
+    closeIcon.addEventListener("click", closePopup);
+    closeButton.addEventListener("click", closePopup);
+
+    // Add click handler for the overlay
+    popupContainer.addEventListener("click", (e) => {
+      if (e.target === popupContainer) {
+        closePopup();
+      }
+    });
+  }
 
   showMoreDetailsPopup(streetlight) {
     // Remove any existing popups to avoid duplication
@@ -802,7 +841,9 @@ showMoreDetailsStreetLightsPopup(streetlight) {
     // Add the content inside the popup
     popupContainer.innerHTML = `
     <div class="popup-content ;">
-      <h4 class="fw-bold text-center mb-3">${streetlight.name} Street lights</h4>
+      <h4 class="fw-bold text-center mb-3">${
+        streetlight.name
+      } Street lights</h4>
       <div class="mb-2"><strong>Streetlight ID:</strong> ${
         streetlight.code
       }</div>
@@ -937,25 +978,27 @@ showMoreDetailsStreetLightsPopup(streetlight) {
   }
 
   setupRegionControls() {
-    document.querySelectorAll('[data-region]').forEach(element => {
-      element.addEventListener('click', (e) => {
+    document.querySelectorAll("[data-region]").forEach((element) => {
+      element.addEventListener("click", (e) => {
         e.preventDefault();
         const region = e.currentTarget.dataset.region;
-        
+
         if (this.activeRegions.has(region)) {
           // Deactivate region
           this.activeRegions.delete(region);
-          e.currentTarget.classList.remove('active-region');
+          e.currentTarget.classList.remove("active-region");
           if (this.geoJsonLayers[region]) {
             this.geoJsonLayer.removeLayer(this.geoJsonLayers[region]);
           }
-          e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye-slash text-muted';
+          e.currentTarget.querySelector(".region-indicator i").className =
+            "fas fa-eye-slash text-muted";
         } else {
           // Activate region
           this.activeRegions.add(region);
-          e.currentTarget.classList.add('active-region');
+          e.currentTarget.classList.add("active-region");
           this.loadRegionGeoJson(region);
-          e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
+          e.currentTarget.querySelector(".region-indicator i").className =
+            "fas fa-eye text-primary";
         }
       });
     });
@@ -963,104 +1006,86 @@ showMoreDetailsStreetLightsPopup(streetlight) {
 
   loadRegionGeoJson(region) {
     const regionFiles = {
-      BTU: 'agusandelnorte.geojson',
+      BTU: "agusandelnorte.geojson",
       // Add more region mappings as needed
     };
 
-    if (!regionFiles[region]) return;
+    if (!regionFiles[region]) {
+      console.error(`No GeoJSON file mapping for region: ${region}`);
+      return;
+    }
 
-    fetch(`rsc/geojson/${regionFiles[region]}`)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const filePath = `rsc/geojson/${regionFiles[region]}`;
+    console.log(`Loading GeoJSON from: ${filePath}`); // Debug log
+
+    fetch(filePath)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         return response.json();
       })
-      .then(data => {
+      .then((data) => {
+        // Remove existing layer if it exists
+        if (this.geoJsonLayers[region]) {
+          this.geoJsonLayer.removeLayer(this.geoJsonLayers[region]);
+        }
+
+        // Create new GeoJSON layer
         const geoJsonLayer = L.geoJSON(data, {
           style: {
-            color: '#1671cb',
+            color: "#1671cb",
             weight: 2,
             fillOpacity: 0.3,
-            fillColor: '#1671cb'
+            fillColor: "#1671cb",
           },
-          pointToLayer: function(feature, latlng) {
-            return null;
-          },
-          onEachFeature: function(feature, layer) {
-            if (layer.setStyle) {
-              layer.setStyle({
-                clickable: false
-              });
-            }
-          }
         });
-        
+
+        // Store reference and add to map
         this.geoJsonLayers[region] = geoJsonLayer;
         this.geoJsonLayer.addLayer(geoJsonLayer);
+
+        console.log(`Successfully loaded GeoJSON for ${region}`); // Debug log
       })
-      .catch(error => {
+      .catch((error) => {
         console.error(`Error loading GeoJSON for ${region}:`, error);
       });
   }
 
-  setupRegionToggles() {
-    document.querySelectorAll('[data-region]').forEach(element => {
-      element.addEventListener('click', (e) => {
-        e.preventDefault();
-        const region = e.currentTarget.dataset.region;
-        const geojsonFile = e.currentTarget.dataset.geojson;
-        
-        if (this.geoJsonLayers[region]) {
-          // If layer exists, toggle its visibility
-          if (this.map.hasLayer(this.geoJsonLayers[region])) {
-            this.map.removeLayer(this.geoJsonLayers[region]);
-            e.currentTarget.classList.remove('active-region');
-            e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye-slash text-muted';
-          } else {
-            this.geoJsonLayers[region].addTo(this.map);
-            e.currentTarget.classList.add('active-region');
-            e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
-          }
-        } else {
-          // Load GeoJSON if not already loaded
-          this.loadRegionGeoJson(region, geojsonFile, e.currentTarget);
-        }
-      });
-    });
-  }
+  // Add new method to show barangay details
+  showBarangayDetails(barangay) {
+    const container = document.createElement("div");
+    container.className = "barangay-details p-4";
+    container.innerHTML = `
+      <h4 class="text-center mb-4">${barangay.name} Details</h4>
+      <div class="mb-3">
+        <strong>Municipality:</strong> ${barangay.municipality}
+      </div>
+      <div class="mb-3">
+        <strong>Province:</strong> ${barangay.province}
+      </div>
+      <div class="mb-3">
+        <strong>Total Streetlights:</strong> ${barangay.totalStreetlights}
+      </div>
+      <div class="text-center">
+        <button class="btn btn-primary view-streetlights">View Streetlights</button>
+      </div>
+    `;
 
-  loadRegionGeoJson(region, filename, element) {
-    fetch(`rsc/geojson/${filename}`)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-      })
-      .then(data => {
-        const geoJsonLayer = L.geoJSON(data, {
-          style: {
-            color: '#1671cb',
-            weight: 2,
-            fillOpacity: 0.1,
-            fillColor: '#1671cb'
-          },
-          pointToLayer: function(feature, latlng) {
-            return null;
-          },
-          onEachFeature: function(feature, layer) {
-            if (layer.setStyle) {
-              layer.setStyle({
-                clickable: false
-              });
-            }
-          }
-        });
-        
-        this.geoJsonLayers[region] = geoJsonLayer;
-        geoJsonLayer.addTo(this.map); // Add directly to map when toggled
-        element.classList.add('active-region');
-        element.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
-      })
-      .catch(error => {
-        console.error(`Error loading GeoJSON for ${region}:`, error);
+    // Show in a modal or popup
+    const modal = L.popup()
+      .setLatLng(this.map.getCenter())
+      .setContent(container)
+      .openOn(this.map);
+
+    // Add click handler for view streetlights button
+    const viewButton = container.querySelector(".view-streetlights");
+    if (viewButton) {
+      viewButton.addEventListener("click", () => {
+        // Here you can add code to show detailed streetlight list
+        console.log(`Showing streetlights for ${barangay.name}`);
+        this.showMoreDetailsStreetLightsPopup(barangay);
       });
+    }
   }
 }
