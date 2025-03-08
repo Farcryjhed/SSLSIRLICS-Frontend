@@ -3,4 +3,4 @@
 ## A frontend for SSLSIRLICS
 
 > [!NOTE]
-> Gipang ignore usa nako ang uban files kay 2k+
+> Use reference .csv for each coordinate codes
