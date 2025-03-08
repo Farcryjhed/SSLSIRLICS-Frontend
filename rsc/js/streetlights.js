@@ -138,6 +138,11 @@ this.map.on("mousemove", (e) => {
       city: 11, // City overview zoom level
       municipality: 14, // Municipality detail zoom level
     };
+
+    this.activeRegions = new Set();
+    this.geoJsonLayers = {};
+    this.geoJsonLayer = L.layerGroup(); // Don't add to map yet
+    this.setupRegionToggles();
   }
 
   handleZoom() {
@@ -176,6 +181,12 @@ this.map.on("mousemove", (e) => {
       attribution:
         '&copy; <a href="https://github.com/AlienWolfX" target="_blank">Allen Cruiz</a>',
     }).addTo(this.map);
+
+    // Create a layer group for GeoJSON layers
+    this.geoJsonLayer = L.layerGroup();
+
+    // Remove the automatic loading of GeoJSON files
+    // Delete or comment out the geojsonFiles.forEach() section
   }
 
   async loadProvinces() {
@@ -923,5 +934,133 @@ showMoreDetailsStreetLightsPopup(streetlight) {
     } catch (error) {
       console.error("Failed to update statistics:", error);
     }
+  }
+
+  setupRegionControls() {
+    document.querySelectorAll('[data-region]').forEach(element => {
+      element.addEventListener('click', (e) => {
+        e.preventDefault();
+        const region = e.currentTarget.dataset.region;
+        
+        if (this.activeRegions.has(region)) {
+          // Deactivate region
+          this.activeRegions.delete(region);
+          e.currentTarget.classList.remove('active-region');
+          if (this.geoJsonLayers[region]) {
+            this.geoJsonLayer.removeLayer(this.geoJsonLayers[region]);
+          }
+          e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye-slash text-muted';
+        } else {
+          // Activate region
+          this.activeRegions.add(region);
+          e.currentTarget.classList.add('active-region');
+          this.loadRegionGeoJson(region);
+          e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
+        }
+      });
+    });
+  }
+
+  loadRegionGeoJson(region) {
+    const regionFiles = {
+      BTU: 'agusandelnorte.geojson',
+      // Add more region mappings as needed
+    };
+
+    if (!regionFiles[region]) return;
+
+    fetch(`rsc/geojson/${regionFiles[region]}`)
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const geoJsonLayer = L.geoJSON(data, {
+          style: {
+            color: '#1671cb',
+            weight: 2,
+            fillOpacity: 0.3,
+            fillColor: '#1671cb'
+          },
+          pointToLayer: function(feature, latlng) {
+            return null;
+          },
+          onEachFeature: function(feature, layer) {
+            if (layer.setStyle) {
+              layer.setStyle({
+                clickable: false
+              });
+            }
+          }
+        });
+        
+        this.geoJsonLayers[region] = geoJsonLayer;
+        this.geoJsonLayer.addLayer(geoJsonLayer);
+      })
+      .catch(error => {
+        console.error(`Error loading GeoJSON for ${region}:`, error);
+      });
+  }
+
+  setupRegionToggles() {
+    document.querySelectorAll('[data-region]').forEach(element => {
+      element.addEventListener('click', (e) => {
+        e.preventDefault();
+        const region = e.currentTarget.dataset.region;
+        const geojsonFile = e.currentTarget.dataset.geojson;
+        
+        if (this.geoJsonLayers[region]) {
+          // If layer exists, toggle its visibility
+          if (this.map.hasLayer(this.geoJsonLayers[region])) {
+            this.map.removeLayer(this.geoJsonLayers[region]);
+            e.currentTarget.classList.remove('active-region');
+            e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye-slash text-muted';
+          } else {
+            this.geoJsonLayers[region].addTo(this.map);
+            e.currentTarget.classList.add('active-region');
+            e.currentTarget.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
+          }
+        } else {
+          // Load GeoJSON if not already loaded
+          this.loadRegionGeoJson(region, geojsonFile, e.currentTarget);
+        }
+      });
+    });
+  }
+
+  loadRegionGeoJson(region, filename, element) {
+    fetch(`rsc/geojson/${filename}`)
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        const geoJsonLayer = L.geoJSON(data, {
+          style: {
+            color: '#1671cb',
+            weight: 2,
+            fillOpacity: 0.1,
+            fillColor: '#1671cb'
+          },
+          pointToLayer: function(feature, latlng) {
+            return null;
+          },
+          onEachFeature: function(feature, layer) {
+            if (layer.setStyle) {
+              layer.setStyle({
+                clickable: false
+              });
+            }
+          }
+        });
+        
+        this.geoJsonLayers[region] = geoJsonLayer;
+        geoJsonLayer.addTo(this.map); // Add directly to map when toggled
+        element.classList.add('active-region');
+        element.querySelector('.region-indicator i').className = 'fas fa-eye text-primary';
+      })
+      .catch(error => {
+        console.error(`Error loading GeoJSON for ${region}:`, error);
+      });
   }
 }
