@@ -101,10 +101,14 @@ class StreetlightMap {
   }
 
   addProvinceMarkers() {
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+
     for (const province in this.coordinates) {
       const data = this.coordinates[province];
 
-      // Only create marker if province has coordinates and municipalities
       if (
         data.lat &&
         data.long &&
@@ -120,17 +124,55 @@ class StreetlightMap {
           }),
         });
 
-        marker.bindPopup(
-          this.createProvincePopup({
-            name: province,
-            code: data.province_code,
-          })
-        );
-
-        marker.on("click", () => {
-          this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-          this.showMunicipalityMarkers(province);
+        const popupContent = this.createProvincePopup({
+          name: province,
+          code: data.province_code,
         });
+
+        if (isMobile) {
+          // Mobile: Show popup on click and handle zoom button
+          const popup = L.popup({
+            closeButton: true,
+            autoClose: false,
+            closeOnClick: false,
+            offset: [0, -20],
+          }).setContent(popupContent);
+
+          marker.bindPopup(popup);
+
+          marker.on("popupopen", (e) => {
+            const zoomButton =
+              e.popup._contentNode.querySelector(".zoom-to-province");
+            if (zoomButton) {
+              zoomButton.addEventListener("click", () => {
+                this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+                this.showMunicipalityMarkers(province);
+                marker.closePopup();
+              });
+            }
+          });
+        } else {
+          // Desktop: Show popup on hover
+          const popup = L.popup({
+            closeButton: false,
+            offset: [0, -20],
+          }).setContent(popupContent);
+
+          marker.on("mouseover", () => {
+            marker.openPopup();
+          });
+
+          marker.on("mouseout", () => {
+            marker.closePopup();
+          });
+
+          marker.on("click", () => {
+            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+            this.showMunicipalityMarkers(province);
+          });
+
+          marker.bindPopup(popup);
+        }
 
         this.provinceMarkers.addLayer(marker);
       }
@@ -514,23 +556,164 @@ class StreetlightMap {
   }
 
   createProvincePopup(province) {
-    const container = L.DomUtil.create("div", "p-3");
+    const container = L.DomUtil.create("div", "province-popup");
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+
     container.innerHTML = `
-      <h6 class="fw-bold mb-2">${province.name}</h6>
-      <p class="mb-2">Total Streetlights: ${province.totalStreetlights}</p>
-      <button class="btn btn-sm btn-primary view-details">View Details</button>
+        <div class="p-2 popup-content">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold text-primary mb-0">${province.name}</h6>
+                ${
+                  isMobile
+                    ? `
+                    <button class="btn btn-sm btn-outline-primary zoom-to-province">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                `
+                    : ""
+                }
+            </div>
+            
+            <div class="stats-container">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="stat-circle bg-primary">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value">${
+                          province.totalStreetlights || 0
+                        }</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+                
+                <div class="status-bars">
+                    <div class="status-item mb-1">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="status-label">
+                                <i class="fas fa-check-circle text-success"></i> Active
+                            </span>
+                            <span class="fw-medium">${
+                              province.activeStreetlights || 0
+                            }</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: ${
+                              province.totalStreetlights
+                                ? (province.activeStreetlights /
+                                    province.totalStreetlights) *
+                                  100
+                                : 0
+                            }%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="status-label">
+                                <i class="fas fa-times-circle text-danger"></i> Inactive
+                            </span>
+                            <span class="fw-medium">${
+                              province.inactiveStreetlights || 0
+                            }</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-danger" style="width: ${
+                              province.totalStreetlights
+                                ? (province.inactiveStreetlights /
+                                    province.totalStreetlights) *
+                                  100
+                                : 0
+                            }%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
 
-    // Add click handler after popup is created
-    setTimeout(() => {
-      const button = container.querySelector(".view-details");
-      if (button) {
-        L.DomEvent.on(button, "click", (e) => {
-          L.DomEvent.stopPropagation(e);
-          this.loadMunicipalities(province.code);
-        });
-      }
-    }, 0);
+    // Add styles
+    if (!document.getElementById("province-popup-styles")) {
+      const styleSheet = document.createElement("style");
+      styleSheet.id = "province-popup-styles";
+      styleSheet.textContent = `
+            .province-popup {
+                min-width: 220px;
+                max-width: 280px;
+            }
+            
+            .province-popup .popup-content {
+                background: white;
+                border-radius: 6px;
+                font-size: 0.9rem;
+            }
+            
+            .province-popup .stat-circle {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 1rem;
+            }
+            
+            .province-popup .stat-value {
+                font-size: 1.2rem;
+                font-weight: bold;
+                color: #333;
+                line-height: 1;
+            }
+            
+            .province-popup .stat-label {
+                color: #666;
+                font-size: 0.8rem;
+            }
+            
+            .province-popup .status-bars {
+                margin-top: 0.5rem;
+            }
+            
+            .province-popup .status-label {
+                font-size: 0.8rem;
+            }
+            
+            .province-popup .progress {
+                background-color: #e9ecef;
+                border-radius: 3px;
+            }
+            
+            .province-popup .zoom-to-province {
+                padding: 0.15rem 0.4rem;
+                font-size: 0.8rem;
+                border-radius: 3px;
+            }
+
+            .province-popup .zoom-to-province:hover {
+                background-color: #0d6efd;
+                color: white;
+            }
+
+            @media (max-width: 576px) {
+                .province-popup {
+                    min-width: 200px;
+                }
+                
+                .province-popup h6 {
+                    font-size: 0.95rem;
+                }
+                
+                .province-popup .stat-value {
+                    font-size: 1.1rem;
+                }
+            }
+        `;
+      document.head.appendChild(styleSheet);
+    }
 
     return container;
   }
@@ -1052,7 +1235,6 @@ class StreetlightMap {
       });
   }
 
-  // Add new method to show barangay details
   showBarangayDetails(barangay) {
     const container = document.createElement("div");
     container.className = "barangay-details p-4";
