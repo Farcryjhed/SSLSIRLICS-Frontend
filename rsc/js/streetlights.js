@@ -501,6 +501,13 @@ class StreetlightMap {
             iconSize: [30, 30],
             iconAnchor: [15, 30],
           }),
+          barangayData: {
+            // Add this line
+            name: barangayName,
+            municipality: municipality,
+            province: province,
+            barangayCode: data.barangay_code,
+          },
         });
 
         marker.bindPopup(
@@ -750,30 +757,240 @@ class StreetlightMap {
     return container;
   }
 
-  createBarangayPopup(streetlight) {
-    const container = L.DomUtil.create("div", "p-3");
+  createBarangayPopup(barangay) {
+    const container = L.DomUtil.create("div", "p-3 barangay-popup");
+
+    // Add barangay code to the data
+    const barangayData = {
+      ...barangay,
+      barangayCode:
+        this.coordinates[barangay.province].municipalities[
+          barangay.municipality
+        ].barangays[barangay.name].barangay_code,
+    };
+
     container.innerHTML = `
-      <h4 class="fw-bold text-center mb-3">${streetlight.name}</h4>
-      <div class="mb-2"><strong>Total:   </strong>  18</div>
-      <div class="mb-2"> Active    8 </div>
-      <div class="mb-2"> Inactive 10</div>
-      <div class="d-flex justify-content-center">
-        <button class="btn btn-sm btn-secondary mt-2 moredetails">More Details</button>
-      </div>
+        <div class="text-center">
+            <h4 class="fw-bold mb-3">${barangay.name}</h4>
+            <div class="stats-grid mb-3">
+                <div class="stat-item">
+                    <div class="stat-value">${barangay.totalStreetlights}</div>
+                    <div class="stat-label">Total Streetlights</div>
+                </div>
+            </div>
+            <button class="btn btn-primary view-details mb-2">More Details</button>
+        </div>
     `;
 
-    // Add event listener for "More Details" button
+    // Add event listener for view details button
     setTimeout(() => {
-      const moreDetailsButton = container.querySelector(".moredetails");
-      if (moreDetailsButton) {
-        L.DomEvent.on(moreDetailsButton, "click", (e) => {
+      const viewButton = container.querySelector(".view-details");
+      if (viewButton) {
+        L.DomEvent.on(viewButton, "click", (e) => {
           L.DomEvent.stopPropagation(e);
-          this.showMoreDetailsStreetLightsPopup(streetlight); // Open the full-screen popup
+          this.showStreetlightDetails(barangayData, e.target);
         });
       }
     }, 0);
 
     return container;
+  }
+
+  async showStreetlightDetails(barangay, buttonElement) {
+    try {
+      const data = await StreetlightQueries.getAllData();
+      if (data.status !== "success") {
+        console.error("Failed to fetch streetlight data");
+        return;
+      }
+
+      // Filter streetlights for this barangay
+      const barangayStreetlights = data.data.filter((reading) => {
+        const parts = reading.socid?.split("-");
+        return parts && parts[1] && parts[1].startsWith(barangay.barangayCode);
+      });
+
+      // Create content for the details popup
+      const detailsContainer = L.DomUtil.create("div", "streetlight-details");
+      detailsContainer.innerHTML = `
+            <div class="p-3" style="max-height: 400px; overflow-y: auto;">
+                <h5 class="fw-bold mb-3">${barangay.name} Streetlights</h5>
+                <div class="streetlight-list">
+                    ${barangayStreetlights
+                      .map((light, index) => {
+                        const isActive = this.isStreetlightActive(light);
+                        return `
+                            <div class="streetlight-item mb-3 p-2 border rounded">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">Streetlight #${
+                                          index + 1
+                                        }</div>
+                                        <div class="status-indicator ${
+                                          isActive
+                                            ? "text-success"
+                                            : "text-danger"
+                                        }">
+                                            <i class="fas fa-lightbulb"></i>
+                                            ${isActive ? "Active" : "Inactive"}
+                                        </div>
+                                        <div class="battery-level text-muted">
+                                            <i class="fas fa-battery-half"></i>
+                                            ${light.batsoc}%
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary view-details" 
+                                            data-socid="${light.socid}">
+                                        View Details
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                      })
+                      .join("")}
+                </div>
+            </div>
+        `;
+
+      // Add styles
+      if (!document.getElementById("streetlight-details-styles")) {
+        const styleSheet = document.createElement("style");
+        styleSheet.id = "streetlight-details-styles";
+        styleSheet.textContent = `
+                .streetlight-details {
+                    min-width: 300px;
+                    max-width: 400px;
+                }
+                .streetlight-item {
+                    background: white;
+                    transition: background-color 0.2s;
+                }
+                .streetlight-item:hover {
+                    background: #f8f9fa;
+                }
+                .status-indicator {
+                    font-size: 0.9rem;
+                    margin: 0.2rem 0;
+                }
+                .battery-level {
+                    font-size: 0.85rem;
+                }
+            `;
+        document.head.appendChild(styleSheet);
+      }
+
+      // Add event listeners for view details buttons
+      detailsContainer.querySelectorAll(".view-details").forEach((button) => {
+        button.addEventListener("click", () => {
+          const socid = button.dataset.socid;
+          window.location.href = `details.html?socid=${socid}`;
+        });
+      });
+
+      // Find the marker position
+      const marker = this.findMarkerForBarangay(barangay);
+      if (marker) {
+        // Create and show the popup at the marker position
+        L.popup({
+          maxWidth: 400,
+          className: "streetlight-details-popup",
+        })
+          .setLatLng(marker.getLatLng())
+          .setContent(detailsContainer)
+          .openOn(this.map);
+      }
+    } catch (error) {
+      console.error("Error showing streetlight details:", error);
+    }
+  }
+
+  // Helper method to find marker for a barangay
+  findMarkerForBarangay(barangay) {
+    let foundMarker = null;
+    this.barangayMarkers.eachLayer((marker) => {
+      const markerData = marker.options.barangayData;
+      if (markerData && markerData.name === barangay.name) {
+        foundMarker = marker;
+      }
+    });
+    return foundMarker;
+  }
+
+  showBarangayDetails(barangay) {
+    const existingPopup = document.querySelector(".full-screen-popup");
+    if (existingPopup) {
+      document.body.removeChild(existingPopup);
+    }
+
+    const container = document.createElement("div");
+    container.className = "full-screen-popup";
+
+    container.innerHTML = `
+        <div class="popup-content p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold">${barangay.name} Details</h4>
+                <button class="btn-close" type="button"></button>
+            </div>
+            <div class="details-container mb-4">
+                <div class="detail-row mb-3">
+                    <strong>Municipality:</strong> ${barangay.municipality}
+                </div>
+                <div class="detail-row mb-3">
+                    <strong>Province:</strong> ${barangay.province}
+                </div>
+                <div class="detail-row mb-3">
+                    <strong>Total Streetlights:</strong> ${barangay.totalStreetlights}
+                </div>
+            </div>
+            <div class="text-center">
+                <button class="btn btn-primary view-streetlights">View Streetlights</button>
+            </div>
+        </div>
+    `;
+
+    // Add styles
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = `
+        .full-screen-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+        }
+        .popup-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            margin: 2rem;
+        }
+        .detail-row {
+            font-size: 1.1rem;
+        }
+    `;
+    document.head.appendChild(styleSheet);
+
+    document.body.appendChild(container);
+
+    // Add event listeners
+    const closeButton = container.querySelector(".btn-close");
+    const viewButton = container.querySelector(".view-streetlights");
+
+    closeButton.addEventListener("click", () => container.remove());
+    container.addEventListener("click", (e) => {
+      if (e.target === container) container.remove();
+    });
+
+    viewButton.addEventListener("click", () => {
+      container.remove();
+      this.showMoreDetailsStreetLightsPopup(barangay);
+    });
   }
 
   getStatusBadge(barangay) {
@@ -814,197 +1031,175 @@ class StreetlightMap {
   }
 
   //-----------------------------------More-Details-Pop-Up----------------------------------/
-  showMoreDetailsStreetLightsPopup(streetlight) {
+  async showMoreDetailsStreetLightsPopup(barangay) {
     const existingPopup = document.querySelector(".full-screen-popup");
     if (existingPopup) {
       document.body.removeChild(existingPopup);
     }
 
-    const popupContainer = document.createElement("div");
-    popupContainer.className = "full-screen-popup justify-content-center";
-    popupContainer.id = "popup";
-
-    // Create close function in the scope
-    const closePopup = () => {
-      const popup = document.getElementById("popup");
-      if (popup) {
-        popup.remove();
+    try {
+      const data = await StreetlightQueries.getAllData();
+      if (data.status !== "success") {
+        console.error("Failed to fetch streetlight data");
+        return;
       }
-    };
 
-    const getLightbulbColor = (isActive) => {
-      return isActive ? "#edf050" : "#000000";
-    };
+      // Filter streetlights for this barangay
+      const barangayStreetlights = data.data.filter((reading) => {
+        const parts = reading.socid?.split("-");
+        return parts && parts[1] && parts[1].startsWith(barangay.barangayCode);
+      });
 
-    popupContainer.innerHTML = `
-    <div class="popup-content">
-      <button class="close-icon btn-secondary" type="button">
-        <i class="fa-solid fa-times"></i>
-      </button>
-      <h4 class="fw-bold text-center mb-4">${streetlight.name} Streetlights</h4>
-      <div class="number-container mb-3">
-        <div class="number-square">
-          <i class="fa-solid fa-1"></i>
-        </div>
-        <div class="status-container">
-          <span class="ms-2"><strong>Status:</strong></span>
-          <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(
-            true
-          )}"></i></span>
-          <span class="ms-2"><strong class="me-1">Battery:</strong>Active</span>
-        </div>
-        <div class="button-container">
-          <button class="btn btn-sm btn-secondary viewmoredetails">View More Details</button>
-        </div>
-      </div>
-      <!-- Repeat for numbers 2-7 -->
-      ${[2, 3, 4, 5, 6, 7]
-        .map(
-          (num) => `
-        <div class="number-container mb-3">
-          <div class="number-square">
-            <i class="fa-solid fa-${num}"></i>
-          </div>
-          <div class="status-container">
-            <span class="ms-2"><strong>Status:</strong></span>
-            <span class="ms-1"><i class="fa-solid fa-lightbulb icon-outside" style="color: ${getLightbulbColor(
-              false
-            )}"></i></span>
-            <span class="ms-2"><strong class="me-1">Battery:</strong>Inactive</span>
-          </div>
-          <div class="button-container">
-            <button class="btn btn-sm btn-secondary viewmoredetails">View More Details</button>
-          </div>
-        </div>
-      `
-        )
-        .join("")}
-      
-      <div class="close-button">
-        <button class="btn btn-danger" type="button">Close</button>
-      </div>
-    </div>
-  `;
+      const popupContainer = document.createElement("div");
+      popupContainer.className = "full-screen-popup";
 
-    // Add styles to head if not already present
-    if (!document.getElementById("popup-styles")) {
+      const popupContent = document.createElement("div");
+      popupContent.className = "popup-content p-4";
+      popupContent.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0">${barangay.name} Streetlights</h4>
+                <button class="btn-close" type="button"></button>
+            </div>
+            <div class="streetlights-grid mb-4">
+                ${barangayStreetlights
+                  .map((light, index) => {
+                    const isActive = this.isStreetlightActive(light);
+                    return `
+                        <div class="streetlight-card">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="streetlight-number">#${
+                                  index + 1
+                                }</div>
+                                <div class="ms-3">
+                                    <div class="status-indicator ${
+                                      isActive ? "active" : "inactive"
+                                    }">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <span>${
+                                          isActive ? "Active" : "Inactive"
+                                        }</span>
+                                    </div>
+                                    <div class="battery-level">
+                                        <i class="fas fa-battery-half"></i>
+                                        ${light.batsoc}%
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary view-details w-100" 
+                                    data-socid="${light.socid}">
+                                View Details
+                            </button>
+                        </div>
+                    `;
+                  })
+                  .join("")}
+            </div>
+        `;
+
+      // Add styles
       const styleSheet = document.createElement("style");
-      styleSheet.id = "popup-styles";
       styleSheet.textContent = `
-      .full-screen-popup {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        z-index: 1050;
-      }
-      .popup-content {
-        background: white;
-        max-width: 800px;
-        margin: auto;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-        position: relative;
-        max-height: 90vh;
-        overflow-y: auto;
-        padding-top: 45px; /* Add more top padding to accommodate the close icon */
-        padding-bottom: 5px; /* Remove extra bottom padding */
-      }
-      .number-square {
-        width: 37px;
-        height: 37px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid #000;
-        border-radius: 5px;
-        font-size: 18px;
-        font-weight: bold;
-        background-color: #1671cb;
-        color: white;
-      }
-      .number-container {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .icon-outside {
-        font-size: 40px;
-        color: #edf050;
-      }
-      .close-icon {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 24px;
-        cursor: pointer;
-        background: none;
-        border: none;
-        padding: 5px;
-        transition: color 0.3s ease;
-      }
-      .close-icon:hover {
-        color: #bb2d3b;
-      }
-      .close-button {
-        position: sticky;
-        bottom: 0;
-        width: 100%;
-        padding: 15px;
-        background: white;
-        text-align: center;
-      }
-      .number-container {
-        display: flex;
-        align-items: start;
-        gap: 8px;
-        position: relative;
-        padding-right: 150px; /* Make space for button */
-      }
-    
-      .status-container {
-        display: flex;
-        align-items: center;
-        flex-grow: 1;
-        gap: 8px;
-      }
-    
-      .button-container {
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-      }
-    
-      .viewmoredetails {
-        white-space: nowrap;
-      }
-    `;
+            .full-screen-popup {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                overflow-y: auto;
+                z-index: 1500;
+                padding: 2rem;
+            }
+            .popup-content {
+                background: white;
+                border-radius: 8px;
+                max-width: 800px;
+                width: 100%;
+                margin: auto;
+            }
+            .streetlights-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            .streetlight-card {
+                border: 1px solid #dee2e6;
+                border-radius: 6px;
+                padding: 1rem;
+            }
+            .streetlight-number {
+                font-size: 1.2rem;
+                font-weight: bold;
+            }
+            .status-indicator {
+                font-size: 0.9rem;
+                margin-bottom: 0.25rem;
+            }
+            .status-indicator.active {
+                color: #198754;
+            }
+            .status-indicator.inactive {
+                color: #dc3545;
+            }
+            .battery-level {
+                font-size: 0.9rem;
+                color: #6c757d;
+            }
+        `;
       document.head.appendChild(styleSheet);
+
+      popupContainer.appendChild(popupContent);
+      document.body.appendChild(popupContainer);
+
+      // Add event listeners
+      const closeButton = popupContent.querySelector(".btn-close");
+      const viewButtons = popupContent.querySelectorAll(".view-details");
+
+      closeButton.addEventListener("click", () => popupContainer.remove());
+      popupContainer.addEventListener("click", (e) => {
+        if (e.target === popupContainer) popupContainer.remove();
+      });
+
+      viewButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const socid = button.dataset.socid;
+          window.location.href = `details.html?socid=${socid}`;
+        });
+      });
+    } catch (error) {
+      console.error("Error showing streetlight details:", error);
     }
-    document.body.appendChild(popupContainer);
+  }
 
-    // Add event listeners after appending to DOM
-    const closeIcon = popupContainer.querySelector(".close-icon");
-    const closeButton = popupContainer.querySelector(
-      ".close-button .btn-danger"
-    );
+  isStreetlightActive(light) {
+    if (!light) return false;
 
-    // Add click handlers for both close buttons
-    closeIcon.addEventListener("click", closePopup);
-    closeButton.addEventListener("click", closePopup);
+    const readingDate = new Date(light.date);
+    const oneHourAgo = new Date();
+    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
-    // Add click handler for the overlay
-    popupContainer.addEventListener("click", (e) => {
-      if (e.target === popupContainer) {
-        closePopup();
-      }
-    });
+    // Check if reading is recent
+    if (readingDate < oneHourAgo) return false;
+
+    // Check battery level
+    if (parseFloat(light.batsoc) <= 20.0) return false;
+
+    const hour = readingDate.getHours();
+    const isDaytime = hour >= 6 && hour < 18;
+
+    if (isDaytime) {
+      // Daytime criteria
+      return (
+        parseFloat(light.pv_voltage) > 12.0 &&
+        parseFloat(light.pv_current) > 0.1
+      );
+    } else {
+      // Nighttime criteria
+      return parseFloat(light.bulbv) > 10.0 && parseFloat(light.batc) < -0.1;
+    }
   }
 
   showMoreDetailsPopup(streetlight) {
