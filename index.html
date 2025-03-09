@@ -86,16 +86,25 @@
       <div class="mt-4">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title">Statistics</h5>
-            <p class="card-text">
-              Total Streetlights: <span id="total-count">0</span>
-            </p>
-            <p class="card-text">
-              Active: <span id="active-count" class="text-success">0</span>
-            </p>
-            <p class="card-text">
-              Inactive: <span id="inactive-count" class="text-danger">0</span>
-            </p>
+            <h5 class="card-title mb-3">Statistics</h5>
+            <div class="stat-item mb-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>Total Streetlights:</span>
+                <span id="total-count" class="fw-bold">0</span>
+              </div>
+            </div>
+            <div class="stat-item mb-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>Active:</span>
+                <span id="active-count" class="text-success fw-bold">0</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>Inactive:</span>
+                <span id="inactive-count" class="text-danger fw-bold">0</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

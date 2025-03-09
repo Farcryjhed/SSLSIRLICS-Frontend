@@ -18,6 +18,10 @@ class StreetlightMap {
 
     // Start the initialization
     this.loadCoordinates();
+
+    // Start periodic statistics updates
+    this.updateStatistics();
+    setInterval(() => this.updateStatistics(), 60000); // Update every minute
   }
 
   setupMap() {
@@ -570,14 +574,14 @@ class StreetlightMap {
       );
 
     container.innerHTML = `
-        <div class="p-2 popup-content">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-bold text-primary mb-0">${province.name}</h6>
+        <div class="p-3 popup-content">
+            <div class="header d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-primary mb-0">${province.name}</h5>
                 ${
                   isMobile
                     ? `
                     <button class="btn btn-sm btn-outline-primary zoom-to-province">
-                        <i class="fas fa-eye"></i>
+                        <i class="fas fa-search-plus"></i>
                     </button>
                 `
                     : ""
@@ -585,57 +589,15 @@ class StreetlightMap {
             </div>
             
             <div class="stats-container">
-                <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="stat-item d-flex align-items-center gap-3">
                     <div class="stat-circle bg-primary">
                         <i class="fas fa-lightbulb"></i>
                     </div>
-                    <div>
+                    <div class="stat-info">
                         <div class="stat-value">${
                           province.totalStreetlights || 0
                         }</div>
-                        <div class="stat-label">Total</div>
-                    </div>
-                </div>
-                
-                <div class="status-bars">
-                    <div class="status-item mb-1">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="status-label">
-                                <i class="fas fa-check-circle text-success"></i> Active
-                            </span>
-                            <span class="fw-medium">${
-                              province.activeStreetlights || 0
-                            }</span>
-                        </div>
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-success" style="width: ${
-                              province.totalStreetlights
-                                ? (province.activeStreetlights /
-                                    province.totalStreetlights) *
-                                  100
-                                : 0
-                            }%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="status-item">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="status-label">
-                                <i class="fas fa-times-circle text-danger"></i> Inactive
-                            </span>
-                            <span class="fw-medium">${
-                              province.inactiveStreetlights || 0
-                            }</span>
-                        </div>
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-danger" style="width: ${
-                              province.totalStreetlights
-                                ? (province.inactiveStreetlights /
-                                    province.totalStreetlights) *
-                                  100
-                                : 0
-                            }%"></div>
-                        </div>
+                        <div class="stat-label">Total Streetlights</div>
                     </div>
                 </div>
             </div>
@@ -648,74 +610,70 @@ class StreetlightMap {
       styleSheet.id = "province-popup-styles";
       styleSheet.textContent = `
             .province-popup {
-                min-width: 220px;
-                max-width: 280px;
+                min-width: 280px;
+                max-width: 320px;
             }
             
             .province-popup .popup-content {
                 background: white;
-                border-radius: 6px;
-                font-size: 0.9rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
             
             .province-popup .stat-circle {
-                width: 32px;
-                height: 32px;
+                width: 40px;
+                height: 40px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-size: 1rem;
+                font-size: 1.2rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             
             .province-popup .stat-value {
-                font-size: 1.2rem;
+                font-size: 1.5rem;
                 font-weight: bold;
-                color: #333;
-                line-height: 1;
+                color: #2c3e50;
+                line-height: 1.2;
             }
             
             .province-popup .stat-label {
-                color: #666;
-                font-size: 0.8rem;
-            }
-            
-            .province-popup .status-bars {
-                margin-top: 0.5rem;
-            }
-            
-            .province-popup .status-label {
-                font-size: 0.8rem;
-            }
-            
-            .province-popup .progress {
-                background-color: #e9ecef;
-                border-radius: 3px;
+                color: #6c757d;
+                font-size: 0.9rem;
             }
             
             .province-popup .zoom-to-province {
-                padding: 0.15rem 0.4rem;
-                font-size: 0.8rem;
-                border-radius: 3px;
+                padding: 0.25rem 0.5rem;
+                font-size: 0.9rem;
+                border-radius: 4px;
+                transition: all 0.2s ease;
             }
 
             .province-popup .zoom-to-province:hover {
                 background-color: #0d6efd;
                 color: white;
+                transform: scale(1.05);
             }
 
             @media (max-width: 576px) {
                 .province-popup {
-                    min-width: 200px;
+                    min-width: 250px;
                 }
                 
-                .province-popup h6 {
-                    font-size: 0.95rem;
+                .province-popup h5 {
+                    font-size: 1.1rem;
                 }
                 
                 .province-popup .stat-value {
-                    font-size: 1.1rem;
+                    font-size: 1.3rem;
+                }
+                
+                .province-popup .stat-circle {
+                    width: 36px;
+                    height: 36px;
+                    font-size: 1rem;
                 }
             }
         `;
@@ -1260,12 +1218,15 @@ class StreetlightMap {
 
   async updateStatistics() {
     try {
+      console.log("Updating statistics...");
       const data = await StreetlightQueries.getAllData();
 
       if (data.status === "success") {
         // Group by SOCID to get latest reading for each streetlight
         const latestReadings = {};
         data.data.forEach((reading) => {
+          if (!reading.socid) return;
+
           const readingDate = new Date(reading.date);
           if (
             !latestReadings[reading.socid] ||
@@ -1276,62 +1237,55 @@ class StreetlightMap {
         });
 
         const totalCount = Object.keys(latestReadings).length;
+        console.log(`Total unique streetlights: ${totalCount}`);
+
         const oneHourAgo = new Date();
         oneHourAgo.setHours(oneHourAgo.getHours() - 1);
 
         const activeCount = Object.values(latestReadings).filter((light) => {
           const readingDate = new Date(light.date);
 
-          // First check if reading is recent
+          // Check if reading is recent
           if (readingDate < oneHourAgo) {
-            console.log(`${light.socid} marked inactive - old reading`);
+            console.log(`${light.socid} inactive - old reading`);
             return false;
           }
 
-          // Check if all values are zero
-          const allZero =
-            parseFloat(light.voltage) === 0 &&
-            parseFloat(light.current) === 0 &&
-            parseFloat(light.pv_voltage) === 0 &&
-            parseFloat(light.pv_current) === 0 &&
-            parseFloat(light.load_voltage) === 0 &&
-            parseFloat(light.load_current) === 0 &&
-            parseFloat(light.batsoc) === 0;
-
-          if (allZero) {
-            console.log(`${light.socid} marked inactive - all values zero`);
+          const batteryLevel = parseFloat(light.batsoc);
+          if (batteryLevel <= 20.0) {
+            console.log(
+              `${light.socid} inactive - low battery: ${batteryLevel}%`
+            );
             return false;
           }
 
-          // Get hour of reading to determine day/night
+          // Get hour to determine day/night
           const hour = readingDate.getHours();
-          const isDaytime = hour >= 6 && hour < 18; // 6 AM to 6 PM
+          const isDaytime = hour >= 6 && hour < 18;
 
           if (isDaytime) {
-            // Daytime criteria: Should have solar charging
-            const isActive =
-              parseFloat(light.pv_voltage) > 12.0 && // Minimum solar voltage
-              parseFloat(light.pv_current) > 0.1 && // Must be charging
-              parseFloat(light.batsoc) > 20.0; // Minimum battery level
+            // Daytime criteria
+            const pvVoltage = parseFloat(light.pv_voltage);
+            const pvCurrent = parseFloat(light.pv_current);
+            const isActive = pvVoltage > 12.0 && pvCurrent > 0.1;
 
             if (!isActive) {
               console.log(
-                `${light.socid} marked inactive - daytime criteria not met:`,
-                `PV: ${light.pv_voltage}V, ${light.pv_current}A, Bat: ${light.batsoc}%`
+                `${light.socid} inactive - daytime criteria not met:`,
+                `PV: ${pvVoltage}V, ${pvCurrent}A`
               );
             }
             return isActive;
           } else {
-            // Nighttime criteria: Should have load drawing current
-            const isActive =
-              parseFloat(light.batsoc) > 20.0 && // Minimum battery level
-              parseFloat(light.bulbv) > 10.0 && // Bulb voltage present
-              parseFloat(light.batc) < -0.1; // Battery must be discharging
+            // Nighttime criteria
+            const bulbVoltage = parseFloat(light.bulbv);
+            const batteryCurrent = parseFloat(light.batc);
+            const isActive = bulbVoltage > 10.0 && batteryCurrent < -0.1;
 
             if (!isActive) {
               console.log(
-                `${light.socid} marked inactive - nighttime criteria not met:`,
-                `Bulb: ${light.bulbv}V, Current: ${light.batc}A, Bat: ${light.batsoc}%`
+                `${light.socid} inactive - nighttime criteria not met:`,
+                `Bulb: ${bulbVoltage}V, Current: ${batteryCurrent}A`
               );
             }
             return isActive;
@@ -1340,19 +1294,43 @@ class StreetlightMap {
 
         const inactiveCount = totalCount - activeCount;
 
-        console.log(
-          `Total: ${totalCount}, Active: ${activeCount}, Inactive: ${inactiveCount}`
-        );
-        console.log("Latest readings:", latestReadings);
+        // Update the display with animation
+        this.animateCounter("total-count", totalCount);
+        this.animateCounter("active-count", activeCount);
+        this.animateCounter("inactive-count", inactiveCount);
 
-        // Update the display
-        document.getElementById("total-count").textContent = totalCount;
-        document.getElementById("active-count").textContent = activeCount;
-        document.getElementById("inactive-count").textContent = inactiveCount;
+        console.log("Statistics updated:", {
+          total: totalCount,
+          active: activeCount,
+          inactive: inactiveCount,
+        });
       }
     } catch (error) {
       console.error("Failed to update statistics:", error);
     }
+  }
+
+  // Add this helper method for smooth counter animation
+  animateCounter(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const startValue = parseInt(element.textContent) || 0;
+    const duration = 1000; // Animation duration in milliseconds
+    const steps = 60; // Number of steps in animation
+    const increment = (targetValue - startValue) / steps;
+    let currentStep = 0;
+
+    const animation = setInterval(() => {
+      currentStep++;
+      const currentValue = Math.round(startValue + increment * currentStep);
+      element.textContent = currentValue;
+
+      if (currentStep >= steps) {
+        element.textContent = targetValue;
+        clearInterval(animation);
+      }
+    }, duration / steps);
   }
 
   setupRegionControls() {
