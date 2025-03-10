@@ -1114,19 +1114,13 @@ class StreetlightMap {
   isStreetlightActive(light) {
     if (!light) return false;
 
-    // Check if reading is recent (last hour)
-    const readingDate = new Date(light.date);
-    const oneHourAgo = new Date();
-    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
-    if (readingDate < oneHourAgo) return false;
+    // Check if light has battery level data
+    if (!light.batsoc) return false;
 
-    // Simply check battery level as the primary indicator
-    // This matches the simplified logic in details.js
+    // This is the exact same logic used in details.js
+    // In details.js: const isActive = batteryLevel > 20.0;
     const batteryLevel = parseFloat(light.batsoc);
     return batteryLevel > 20.0;
-
-    // Note: We've removed the more complex day/night logic to keep consistency
-    // with details.js which only uses battery level for determining active status
   }
 
   showMoreDetailsPopup(streetlight) {
