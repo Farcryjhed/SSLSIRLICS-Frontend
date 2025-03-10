@@ -595,7 +595,7 @@ class StreetlightMap {
                     </div>
                     <div class="stat-info">
                         <div class="stat-value">${
-                          province.totalStreetlights || 0
+                          province.totalStreetlights || 4
                         }</div>
                         <div class="stat-label">Total Streetlights</div>
                     </div>

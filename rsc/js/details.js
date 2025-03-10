@@ -48,6 +48,15 @@ const chartOptions = {
         day: "dd MMM",
         hour: "HH:mm",
       },
+      format: "HH:mm",
+      style: {
+        colors: "#666",
+        fontSize: "12px",
+      },
+    },
+    tickAmount: 24,
+    tooltip: {
+      format: "HH:mm",
     },
   },
   yaxis: {
@@ -55,6 +64,9 @@ const chartOptions = {
     max: 100,
     title: {
       text: "Battery Level (%)",
+    },
+    labels: {
+      formatter: (value) => `${Math.round(value)}%`,
     },
   },
   stroke: {
@@ -64,6 +76,39 @@ const chartOptions = {
   colors: ["#28a745"],
   grid: {
     borderColor: "#f1f1f1",
+    xaxis: {
+      lines: {
+        show: true,
+      },
+    },
+    yaxis: {
+      lines: {
+        show: true,
+      },
+    },
+    padding: {
+      top: 10,
+      right: 10,
+      bottom: 10,
+      left: 10,
+    },
+  },
+  tooltip: {
+    x: {
+      format: "HH:mm",
+    },
+    y: {
+      formatter: (value) => `${Math.round(value)}%`,
+    },
+  },
+  markers: {
+    size: 4,
+    colors: ["#28a745"],
+    strokeColors: "#fff",
+    strokeWidth: 2,
+    hover: {
+      size: 6,
+    },
   },
 };
 
@@ -76,7 +121,6 @@ chart.render();
 function findLocation(socid) {
   console.log("Finding location for SOCID:", socid);
 
-  // Split SOCID and get first 3 chars of barangay ID
   const [municipalityCode, fullBarangayId] = socid.split("-");
   const barangayPrefix = fullBarangayId.substring(0, 3);
 
@@ -100,7 +144,6 @@ function findLocation(socid) {
 
         const barangays = municipalities[municipality].barangays;
 
-        // Compare only first 3 chars of barangay names
         for (const barangay in barangays) {
           const barangayCode = barangays[barangay].barangay_code;
           if (barangayCode === barangayPrefix) {
@@ -125,23 +168,40 @@ function findLocation(socid) {
   return null;
 }
 
-function updateStreetlightDetails(data) {
-  console.log("Updating streetlight details with data:", data);
+async function fetchHistoricalData(socid) {
+  try {
+    const response = await fetch(
+      `api/endpoints/get_streetlight_history.php?socid=${socid}`
+    );
+    const data = await response.json();
+    if (data.status === "success") {
+      return data.data;
+    }
+    console.error("Error fetching historical data:", data.message);
+    return [];
+  } catch (error) {
+    console.error("Failed to fetch historical data:", error);
+    return [];
+  }
+}
 
-  // Update basic info
+async function updateStreetlightDetails(readings) {
+  console.log("Updating streetlight details with readings:", readings);
+
+  const latestReading = readings[readings.length - 1];
+
   document.getElementById(
     "streetlight-title"
-  ).textContent = `Streetlight ${data.socid}`;
-  document.getElementById("solv").textContent = data.solv;
-  document.getElementById("solc").textContent = data.solc;
-  document.getElementById("batv").textContent = data.batv;
-  document.getElementById("batc").textContent = data.batc;
-  document.getElementById("batsoc").textContent = data.batsoc;
-  document.getElementById("bulbv").textContent = data.bulbv;
-  document.getElementById("curv").textContent = data.curv;
+  ).textContent = `Streetlight ${latestReading.socid}`;
+  document.getElementById("solv").textContent = latestReading.solv;
+  document.getElementById("solc").textContent = latestReading.solc;
+  document.getElementById("batv").textContent = latestReading.batv;
+  document.getElementById("batc").textContent = latestReading.batc;
+  document.getElementById("batsoc").textContent = latestReading.batsoc;
+  document.getElementById("bulbv").textContent = latestReading.bulbv;
+  document.getElementById("curv").textContent = latestReading.curv;
 
-  // Format and update timestamp
-  const formattedDate = new Date(data.date).toLocaleString(undefined, {
+  const formattedDate = new Date(latestReading.date).toLocaleString(undefined, {
     year: "numeric",
     month: "numeric",
     day: "numeric",
@@ -149,72 +209,77 @@ function updateStreetlightDetails(data) {
     minute: "2-digit",
     hour12: true,
   });
-  console.log("Formatted date:", formattedDate);
+
   document.getElementById("last-update").textContent = formattedDate;
 
-  // Update location
   let barangayText = "Unknown Location";
-  if (barangayData && data.socid) {
-    const location = findLocation(data.socid);
-    console.log("Location lookup result:", location);
+  if (barangayData && latestReading.socid) {
+    const location = findLocation(latestReading.socid);
     if (location) {
       barangayText = `${location.barangay}, ${location.municipality}, ${location.province}`;
     }
   }
   document.getElementById("barangay-text").textContent = barangayText;
 
-  // Update status
   const statusBadge = document.getElementById("status-badge");
-  const batteryLevel = parseFloat(data.batsoc);
+  const batteryLevel = parseFloat(latestReading.batsoc);
   const isActive = batteryLevel > 20.0;
-  console.log("Status calculation:", {
-    batteryLevel,
-    isActive,
-  });
-
   statusBadge.textContent = isActive ? "Active" : "Inactive";
   statusBadge.className = `badge bg-${isActive ? "success" : "danger"}`;
 
-  // Update chart
-  const timestamp = new Date(data.date).getTime();
-  console.log("Adding data point to chart:", {
-    timestamp,
-    batteryLevel,
+  const chartData = readings.map((reading) => ({
+    x: new Date(reading.date).getTime(),
+    y: parseFloat(reading.batsoc),
+  }));
+
+  console.log("Preparing chart data:", {
+    totalReadings: chartData.length,
+    timeRange: {
+      start: new Date(chartData[0].x).toLocaleString(),
+      end: new Date(chartData[chartData.length - 1].x).toLocaleString(),
+    },
   });
 
-  chart.appendData([
+  chart.updateSeries([
     {
-      data: [{ x: timestamp, y: batteryLevel }],
+      name: "Battery Level",
+      data: chartData,
     },
   ]);
 
-  // Cleanup old data points
-  const series = chart.w.config.series[0].data;
-  const twentyFourHoursAgo = timestamp - 24 * 60 * 60 * 1000;
-  const removedPoints = series.filter(
-    (point) => point.x < twentyFourHoursAgo
-  ).length;
-
-  while (series.length > 0 && series[0].x < twentyFourHoursAgo) {
-    series.shift();
-  }
-
-  console.log("Chart data cleanup:", {
-    removedPoints,
-    remainingPoints: series.length,
-    oldestTimestamp: series[0]?.x,
-    newestTimestamp: series[series.length - 1]?.x,
+  chart.updateOptions({
+    xaxis: {
+      type: "datetime",
+      labels: {
+        datetimeFormatter: {
+          year: "yyyy",
+          month: "MMM 'yy",
+          day: "dd MMM",
+          hour: "HH:mm",
+        },
+        format: "dd MMM HH:mm",
+        style: {
+          colors: "#666",
+          fontSize: "12px",
+        },
+      },
+      tickAmount: chartData.length > 8 ? 8 : chartData.length,
+    },
   });
 }
 
 if (socid) {
   console.log("Fetching streetlight data for SOCID:", socid);
-  fetch(`api/endpoints/get_streetlight_details.php?socid=${socid}`)
+  fetch(`api/endpoints/get_details.php?socid=${socid}`)
     .then((response) => response.json())
-    .then((data) => {
+    .then(async (data) => {
       console.log("API response:", data);
       if (data.status === "success") {
-        updateStreetlightDetails(data.data);
+        const readings = Array.isArray(data.data) ? data.data : [data.data];
+
+        readings.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        await updateStreetlightDetails(readings);
       } else {
         console.error("API error:", data.message);
         alert("Error: " + data.message);
