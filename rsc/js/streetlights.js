@@ -318,36 +318,6 @@ class StreetlightMap {
     console.log("Showing municipality markers for province:", province);
 
     try {
-      // Get all streetlight data first
-      const streetlightData = await StreetlightQueries.getAllData();
-      if (streetlightData.status !== "success") {
-        console.error("Failed to fetch streetlight data");
-        return;
-      }
-
-      console.log("Raw streetlight data:", streetlightData.data);
-
-      // Extract municipality codes from SOCIDs
-      const activeMunicipalityCodes = new Set();
-      streetlightData.data.forEach((reading) => {
-        if (reading?.socid) {
-          const parts = reading.socid.split("-");
-          if (parts.length === 2) {
-            // The first part (e.g., 'BTU', 'CAR') is the municipality code
-            const municipalityCode = parts[0];
-            activeMunicipalityCodes.add(municipalityCode);
-            console.log(
-              `Found municipality code: ${municipalityCode} from SOCID: ${reading.socid}`
-            );
-          }
-        }
-      });
-
-      console.log(
-        `Active municipality codes:`,
-        Array.from(activeMunicipalityCodes)
-      );
-
       // Get municipality data from coordinates
       const provinceData = this.coordinates[province];
       if (!provinceData || !provinceData.municipalities) {
@@ -358,10 +328,6 @@ class StreetlightMap {
       // Add markers for municipalities that have matching codes
       for (const municipalityName in provinceData.municipalities) {
         const municipalityData = provinceData.municipalities[municipalityName];
-        console.log(
-          `Checking municipality: ${municipalityName}`,
-          municipalityData
-        );
 
         // Skip if no valid coordinates or municipality code
         if (
@@ -373,35 +339,20 @@ class StreetlightMap {
           continue;
         }
 
-        // Check if this municipality has any matching streetlights
-        const hasMatches = activeMunicipalityCodes.has(
-          municipalityData.municipality_code
+        // Get count statistics from API for this municipality
+        const statsResponse = await fetch(
+          `api/endpoints/get_count.php?pattern=${municipalityData.municipality_code}`
         );
-        console.log(
-          `Municipality ${municipalityName} (${municipalityData.municipality_code}) matches:`,
-          hasMatches
-        );
+        const statsData = await statsResponse.json();
 
-        if (!hasMatches) {
+        if (statsData.status !== "success" || statsData.data.total === 0) {
           console.log(
             `Skipping ${municipalityName} - no matching streetlights`
           );
           continue;
         }
 
-        // Get streetlight count for this municipality
-        const streetlightCount = streetlightData.data.filter((reading) => {
-          if (!reading?.socid) return false;
-          const parts = reading.socid.split("-");
-          return (
-            parts.length === 2 &&
-            parts[0] === municipalityData.municipality_code
-          );
-        }).length;
-
-        console.log(
-          `Found ${streetlightCount} streetlights for ${municipalityName}`
-        );
+        console.log(`Municipality ${municipalityName} stats:`, statsData.data);
 
         // Create marker
         const marker = L.marker([municipalityData.lat, municipalityData.long], {
@@ -414,12 +365,27 @@ class StreetlightMap {
         });
 
         const popupContent = `
-                <div class="p-3">
-                    <h6 class="fw-bold mb-2">${municipalityName}</h6>
-                    <p class="mb-2">Total Streetlights: ${streetlightCount}</p>
-                    <button class="btn btn-sm btn-primary view-details">View Details</button>
-                </div>
-            `;
+          <div class="p-3">
+            <h6 class="fw-bold mb-3">${municipalityName}</h6>
+            
+            <div class="row text-center mb-3">
+              <div class="col-4">
+                <div class="stat-value">${statsData.data.total}</div>
+                <div class="stat-label text-muted">Total</div>
+              </div>
+              <div class="col-4">
+                <div class="stat-value text-success">${statsData.data.active}</div>
+                <div class="stat-label text-muted">Active</div>
+              </div>
+              <div class="col-4">
+                <div class="stat-value text-danger">${statsData.data.inactive}</div>
+                <div class="stat-label text-muted">Inactive</div>
+              </div>
+            </div>
+            
+            <button class="btn btn-sm btn-primary w-100 view-details">View Details</button>
+          </div>
+        `;
 
         marker.bindPopup(popupContent);
         marker.on("popupopen", (e) => {
@@ -452,29 +418,11 @@ class StreetlightMap {
       // Get barangays from coordinates
       const barangays =
         this.coordinates[province].municipalities[municipality].barangays;
+      const municipalityCode =
+        this.coordinates[province].municipalities[municipality]
+          .municipality_code;
 
-      // Get all streetlight data
-      const streetlightData = await StreetlightQueries.getAllData();
-      if (streetlightData.status !== "success") {
-        console.error("Failed to fetch streetlight data");
-        return;
-      }
-
-      // Create a Set of barangay codes that have streetlights
-      const activeBarangayCodes = new Set();
-      streetlightData.data.forEach((reading) => {
-        if (reading?.socid) {
-          const parts = reading.socid.split("-");
-          if (parts.length === 2) {
-            const barangayCode = parts[1].substring(0, 3);
-            activeBarangayCodes.add(barangayCode);
-          }
-        }
-      });
-
-      console.log("Active barangay codes:", Array.from(activeBarangayCodes));
-
-      // Add markers only for barangays that have streetlights
+      // Add markers for barangays
       for (const barangayName in barangays) {
         const data = barangays[barangayName];
 
@@ -483,20 +431,19 @@ class StreetlightMap {
           continue;
         }
 
-        // Skip if barangay has no streetlights
-        if (!activeBarangayCodes.has(data.barangay_code)) {
+        // Get count statistics from API for this barangay
+        const fullBarangayCode = municipalityCode + data.barangay_code;
+        const statsResponse = await fetch(
+          `api/endpoints/get_count.php?pattern=${fullBarangayCode}`
+        );
+        const statsData = await statsResponse.json();
+
+        if (statsData.status !== "success" || statsData.data.total === 0) {
           console.log(`Skipping ${barangayName} - no streetlights found`);
           continue;
         }
 
-        // Get streetlight count for this barangay
-        const streetlightCount = streetlightData.data.filter((reading) =>
-          reading?.socid?.split("-")[1]?.startsWith(data.barangay_code)
-        ).length;
-
-        console.log(
-          `Creating marker for ${barangayName} with ${streetlightCount} streetlights`
-        );
+        console.log(`Barangay ${barangayName} stats:`, statsData.data);
 
         const marker = L.marker([data.lat, data.long], {
           icon: L.divIcon({
@@ -506,22 +453,22 @@ class StreetlightMap {
             iconAnchor: [15, 30],
           }),
           barangayData: {
-            // Add this line
             name: barangayName,
             municipality: municipality,
             province: province,
             barangayCode: data.barangay_code,
+            fullCode: fullBarangayCode,
           },
         });
 
-        marker.bindPopup(
-          this.createBarangayPopup({
-            name: barangayName,
-            municipality: municipality,
-            province: province,
-            totalStreetlights: streetlightCount,
-          })
+        const popupContent = this.createBarangayPopupWithStats(
+          barangayName,
+          municipality,
+          province,
+          statsData.data
         );
+
+        marker.bindPopup(popupContent);
 
         this.barangayMarkers.addLayer(marker);
       }
@@ -763,77 +710,109 @@ class StreetlightMap {
       }
 
       // Filter streetlights for this barangay
-      const barangayStreetlights = data.data.filter((reading) => {
+      const barangayReadings = data.data.filter((reading) => {
         const parts = reading.socid?.split("-");
         return parts && parts[1] && parts[1].startsWith(barangay.barangayCode);
       });
 
+      // Group readings by SOCID and keep only the latest reading for each streetlight
+      const latestReadings = {};
+      barangayReadings.forEach((reading) => {
+        if (!reading.socid) return;
+
+        const readingDate = new Date(reading.date);
+        if (
+          !latestReadings[reading.socid] ||
+          readingDate > new Date(latestReadings[reading.socid].date)
+        ) {
+          latestReadings[reading.socid] = reading;
+        }
+      });
+
+      // Convert to array and sort by SOCID
+      const uniqueStreetlights = Object.values(latestReadings).sort((a, b) =>
+        a.socid.localeCompare(b.socid)
+      );
+
       // Create content for the details popup
       const detailsContainer = L.DomUtil.create("div", "streetlight-details");
       detailsContainer.innerHTML = `
-            <div class="p-3" style="max-height: 400px; overflow-y: auto;">
-                <h5 class="fw-bold mb-3">${barangay.name} Streetlights</h5>
-                <div class="streetlight-list">
-                    ${barangayStreetlights
-                      .map((light, index) => {
-                        const isActive = this.isStreetlightActive(light);
-                        return `
-                            <div class="streetlight-item mb-3 p-2 border rounded">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <div class="fw-bold">Streetlight #${
-                                          index + 1
-                                        }</div>
-                                        <div class="status-indicator ${
-                                          isActive
-                                            ? "text-success"
-                                            : "text-danger"
-                                        }">
-                                            <i class="fas fa-lightbulb"></i>
-                                            ${isActive ? "Active" : "Inactive"}
-                                        </div>
-                                        <div class="battery-level text-muted">
-                                            <i class="fas fa-battery-half"></i>
-                                            ${light.batsoc}%
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-primary view-details" 
-                                            data-socid="${light.socid}">
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                      })
-                      .join("")}
-                </div>
-            </div>
-        `;
+        <div class="p-3" style="max-height: 400px; overflow-y: auto;">
+          <h5 class="fw-bold mb-3">${barangay.name} Streetlights (${
+        uniqueStreetlights.length
+      })</h5>
+          <div class="streetlight-list">
+            ${
+              uniqueStreetlights.length > 0
+                ? uniqueStreetlights
+                    .map((light, index) => {
+                      const isActive = this.isStreetlightActive(light);
+                      const lastUpdated = new Date(light.date).toLocaleString();
+                      return `
+                  <div class="streetlight-item mb-3 p-2 border rounded">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div class="fw-bold">
+                          <span class="text-primary">${light.socid}</span>
+                        </div>
+                        <div class="status-indicator ${
+                          isActive ? "text-success" : "text-danger"
+                        }">
+                          <i class="fas fa-lightbulb"></i>
+                          ${isActive ? "Active" : "Inactive"}
+                        </div>
+                        <div class="battery-level text-muted">
+                          <i class="fas fa-battery-half"></i>
+                          ${light.batsoc}%
+                        </div>
+                        <div class="update-time small text-muted">
+                          <i class="fas fa-clock"></i>
+                          ${lastUpdated}
+                        </div>
+                      </div>
+                      <button class="btn btn-sm btn-outline-primary view-details" 
+                              data-socid="${light.socid}">
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                `;
+                    })
+                    .join("")
+                : '<div class="alert alert-info">No streetlights found in this barangay.</div>'
+            }
+          </div>
+        </div>
+      `;
 
-      // Add styles
+      // Rest of the method remains the same...
       if (!document.getElementById("streetlight-details-styles")) {
         const styleSheet = document.createElement("style");
         styleSheet.id = "streetlight-details-styles";
         styleSheet.textContent = `
-                .streetlight-details {
-                    min-width: 300px;
-                    max-width: 400px;
-                }
-                .streetlight-item {
-                    background: white;
-                    transition: background-color 0.2s;
-                }
-                .streetlight-item:hover {
-                    background: #f8f9fa;
-                }
-                .status-indicator {
-                    font-size: 0.9rem;
-                    margin: 0.2rem 0;
-                }
-                .battery-level {
-                    font-size: 0.85rem;
-                }
-            `;
+          .streetlight-details {
+            min-width: 300px;
+            max-width: 400px;
+          }
+          .streetlight-item {
+            background: white;
+            transition: background-color 0.2s;
+          }
+          .streetlight-item:hover {
+            background: #f8f9fa;
+          }
+          .status-indicator {
+            font-size: 0.9rem;
+            margin: 0.2rem 0;
+          }
+          .battery-level {
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+          }
+          .update-time {
+            font-size: 0.8rem;
+          }
+        `;
         document.head.appendChild(styleSheet);
       }
 
@@ -847,31 +826,31 @@ class StreetlightMap {
 
       // Find the marker position
       const marker = this.findMarkerForBarangay(barangay);
+
+      // Create and show the popup at the marker position or map center if marker not found
+      const popupOptions = {
+        maxWidth: 400,
+        className: "streetlight-details-popup",
+      };
+
       if (marker) {
-        // Create and show the popup at the marker position
-        L.popup({
-          maxWidth: 400,
-          className: "streetlight-details-popup",
-        })
+        L.popup(popupOptions)
           .setLatLng(marker.getLatLng())
+          .setContent(detailsContainer)
+          .openOn(this.map);
+      } else {
+        // If marker not found, show popup at map center
+        console.warn(
+          `Marker not found for barangay ${barangay.name}. Showing popup at map center.`
+        );
+        L.popup(popupOptions)
+          .setLatLng(this.map.getCenter())
           .setContent(detailsContainer)
           .openOn(this.map);
       }
     } catch (error) {
       console.error("Error showing streetlight details:", error);
     }
-  }
-
-  // Helper method to find marker for a barangay
-  findMarkerForBarangay(barangay) {
-    let foundMarker = null;
-    this.barangayMarkers.eachLayer((marker) => {
-      const markerData = marker.options.barangayData;
-      if (markerData && markerData.name === barangay.name) {
-        foundMarker = marker;
-      }
-    });
-    return foundMarker;
   }
 
   showBarangayDetails(barangay) {
@@ -1135,29 +1114,19 @@ class StreetlightMap {
   isStreetlightActive(light) {
     if (!light) return false;
 
+    // Check if reading is recent (last hour)
     const readingDate = new Date(light.date);
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
-
-    // Check if reading is recent
     if (readingDate < oneHourAgo) return false;
 
-    // Check battery level
-    if (parseFloat(light.batsoc) <= 20.0) return false;
+    // Simply check battery level as the primary indicator
+    // This matches the simplified logic in details.js
+    const batteryLevel = parseFloat(light.batsoc);
+    return batteryLevel > 20.0;
 
-    const hour = readingDate.getHours();
-    const isDaytime = hour >= 6 && hour < 18;
-
-    if (isDaytime) {
-      // Daytime criteria
-      return (
-        parseFloat(light.pv_voltage) > 12.0 &&
-        parseFloat(light.pv_current) > 0.1
-      );
-    } else {
-      // Nighttime criteria
-      return parseFloat(light.bulbv) > 10.0 && parseFloat(light.batc) < -0.1;
-    }
+    // Note: We've removed the more complex day/night logic to keep consistency
+    // with details.js which only uses battery level for determining active status
   }
 
   showMoreDetailsPopup(streetlight) {
@@ -1442,5 +1411,149 @@ class StreetlightMap {
         this.showMoreDetailsStreetLightsPopup(barangay);
       });
     }
+  }
+
+  createBarangayPopupWithStats(barangayName, municipality, province, stats) {
+    const container = L.DomUtil.create("div", "p-3 barangay-popup");
+
+    container.innerHTML = `
+      <div class="text-center">
+        <h5 class="fw-bold mb-3">${barangayName}</h5>
+        
+        <div class="row text-center mb-3">
+          <div class="col-4">
+            <div class="stat-value">${stats.total}</div>
+            <div class="stat-label text-muted small">Total</div>
+          </div>
+          <div class="col-4">
+            <div class="stat-value text-success">${stats.active}</div>
+            <div class="stat-label text-muted small">Active</div>
+          </div>
+          <div class="col-4">
+            <div class="stat-value text-danger">${stats.inactive}</div>
+            <div class="stat-label text-muted small">Inactive</div>
+          </div>
+        </div>
+        
+        <button class="btn btn-primary view-details mb-2">More Details</button>
+      </div>
+    `;
+
+    // Add styles if not added already
+    if (!document.getElementById("barangay-popup-styles")) {
+      const styleSheet = document.createElement("style");
+      styleSheet.id = "barangay-popup-styles";
+      styleSheet.textContent = `
+        .barangay-popup .stat-value {
+          font-size: 1.2rem;
+          font-weight: bold;
+          line-height: 1.2;
+        }
+        .barangay-popup .stat-label {
+          font-size: 0.8rem;
+        }
+      `;
+      document.head.appendChild(styleSheet);
+    }
+
+    // Add event listener for view details button
+    setTimeout(() => {
+      const viewButton = container.querySelector(".view-details");
+      if (viewButton) {
+        L.DomEvent.on(viewButton, "click", (e) => {
+          L.DomEvent.stopPropagation(e);
+
+          // Get barangay code from coordinates
+          const barangayCode =
+            this.coordinates[province].municipalities[municipality].barangays[
+              barangayName
+            ].barangay_code;
+
+          this.showStreetlightDetails(
+            {
+              name: barangayName,
+              municipality: municipality,
+              province: province,
+              barangayCode: barangayCode,
+            },
+            e.target
+          );
+        });
+      }
+    }, 0);
+
+    return container;
+  }
+
+  search() {
+    const searchInput = document.getElementById("search-input");
+    if (!searchInput || !searchInput.value.trim()) {
+      alert("Please enter a municipality or province code to search.");
+      return;
+    }
+
+    const pattern = searchInput.value.trim().toUpperCase();
+
+    // Validate input (should be 3 chars for municipality, 6 chars for barangay)
+    if (pattern.length !== 3 && pattern.length !== 6) {
+      alert(
+        "Please enter a valid code: 3 characters for municipality or 6 characters for barangay."
+      );
+      return;
+    }
+
+    // Show loading indicator
+    const resultsContainer = document.getElementById("search-results");
+    if (resultsContainer) {
+      resultsContainer.innerHTML =
+        '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    }
+
+    // Call the API endpoint
+    fetch(`api/endpoints/get_count.php?pattern=${pattern}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data.status === "success") {
+          this.displaySearchResults(data.data, pattern);
+        } else {
+          throw new Error(data.message || "Error fetching data");
+        }
+      })
+      .catch((error) => {
+        if (resultsContainer) {
+          resultsContainer.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+              <i class="fas fa-exclamation-circle me-2"></i>
+              ${error.message}
+            </div>
+          `;
+        }
+        console.error("Search error:", error);
+      });
+  }
+
+  // Add this method to the StreetlightMap class
+  findMarkerForBarangay(barangay) {
+    if (!this.barangayMarkers) return null;
+
+    let foundMarker = null;
+
+    this.barangayMarkers.eachLayer((marker) => {
+      const markerData = marker.options.barangayData;
+      if (
+        markerData &&
+        markerData.name === barangay.name &&
+        markerData.barangayCode === barangay.barangayCode
+      ) {
+        foundMarker = marker;
+      }
+    });
+
+    return foundMarker;
   }
 }
