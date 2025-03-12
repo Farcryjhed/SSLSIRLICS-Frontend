@@ -1,7 +1,7 @@
 class StreetlightMap {
   constructor() {
     this.zoomLevels = {
-      city: 11,
+      city: 10.13,
       municipality: 14,
     };
 
@@ -58,7 +58,10 @@ class StreetlightMap {
     // Create the map
     this.map = L.map("map", {
       zoomControl: false,
-    }).setView([center.lat, center.long], 9);
+      zoomSnap: 0.1,    // Allows fractional zoom levels with 0.1 steps
+      zoomDelta: 0.1,   // Mouse wheel zoom changes by 0.1
+      wheelPxPerZoomLevel: 100  // Adjusts mouse wheel sensitivity
+    }).setView([center.lat, center.long], parseFloat(8.50));
 
     // Setup the map layers
     this.setupMap();
@@ -149,6 +152,7 @@ class StreetlightMap {
               e.popup._contentNode.querySelector(".zoom-to-province");
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
+                this.provinceMarkers.removeLayer(marker); // Remove marker immediately
                 this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
                 this.showMunicipalityMarkers(province);
                 marker.closePopup();
@@ -171,6 +175,7 @@ class StreetlightMap {
           });
 
           marker.on("click", () => {
+            this.provinceMarkers.removeLayer(marker); // Remove marker immediately
             this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
             this.showMunicipalityMarkers(province);
           });

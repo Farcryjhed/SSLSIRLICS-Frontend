@@ -18,9 +18,6 @@
       id="navbar"
       style="z-index: 1050; width: 40%; border-radius: 30px">
       <div class="container-fluid">
-        <button id="toggle-btn" class="btn">
-          <i class="fas fa-chevron-right"></i>
-        </button>
         <form
           class="d-flex"
           id="search"
@@ -63,52 +60,6 @@
       ">
       Move cursor to see coordinates
     </div>
-
-    <div id="sidebar" class="bg-light">
-      <div class="d-flex align-items-center mb-4">
-        <i class="fas fa-lightbulb text-warning me-2 fs-4"></i>
-        <h2 class="h4 mb-0">SSLSIRLICS Streetlights Summary</h2>
-      </div>
-      <div class="list-group shadow-sm">
-        <h5 class="card-title list-group-item border-0 m-0">Location</h5>
-        <a
-          href="#"
-          class="list-group-item list-group-item-action border-0 m-0"
-          data-region="BTU"
-          data-geojson="agusandelnorte.geojson">
-          <i class="fas fa-map-marker-alt me-2"></i>
-          <span>Butuan City</span>
-          <span class="region-indicator float-end">
-            <i class="fas fa-eye-slash text-muted"></i>
-          </span>
-        </a>
-      </div>
-      <div class="mt-4">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title mb-3">Statistics</h5>
-            <div class="stat-item mb-2">
-              <div class="d-flex justify-content-between align-items-center">
-                <span>Total Streetlights:</span>
-                <span id="total-count" class="fw-bold">0</span>
-              </div>
-            </div>
-            <div class="stat-item mb-2">
-              <div class="d-flex justify-content-between align-items-center">
-                <span>Active:</span>
-                <span id="active-count" class="text-success fw-bold">0</span>
-              </div>
-            </div>
-            <div class="stat-item">
-              <div class="d-flex justify-content-between align-items-center">
-                <span>Inactive:</span>
-                <span id="inactive-count" class="text-danger fw-bold">0</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     <div id="map"></div>
     <script src="rsc/js/streetlight_queries.js"></script>
     <script src="rsc/js/streetlights.js"></script>
@@ -116,27 +67,10 @@
       let map;
       document.addEventListener("DOMContentLoaded", () => {
         map = new StreetlightMap();
-
-        const toggleBtn = document.getElementById("toggle-btn");
-        const sidebar = document.getElementById("sidebar");
-        const navbar = document.getElementById("navbar");
-
-        toggleBtn.addEventListener("click", () => {
-          if (sidebar.style.left === "0px") {
-            sidebar.style.left = "-300px";
-            navbar.style.left = "0px";
-            toggleBtn.style.left = "0px";
-            toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-          } else {
-            sidebar.style.left = "0px";
-            navbar.style.left = "300px";
-            toggleBtn.style.left = "300px";
-            toggleBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-          }
           setTimeout(() => {
             map.map.invalidateSize();
           }, 300);
-        });
+        
       });
     </script>
   </body>
