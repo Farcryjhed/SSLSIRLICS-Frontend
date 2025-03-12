@@ -824,9 +824,61 @@ class StreetlightMap {
 
       // Add event listeners for view details buttons
       detailsContainer.querySelectorAll(".view-details").forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
           const socid = button.dataset.socid;
-          this.createDetailsPopup(socid);
+          console.log("View details clicked for SOCID:", socid);
+          
+          try {
+            // First fetch the data
+            const response = await fetch(`api/endpoints/get_details.php?socid=${socid}`);
+            const data = await response.json();
+            
+            if (data.status === "success") {
+              // Create and show popup only after successful data fetch
+              const popup = this.createDetailsPopup(socid);
+              
+              // Update the details immediately with the fetched data
+              const readings = Array.isArray(data.data) ? data.data : [data.data];
+              const latestReading = readings[readings.length - 1];
+              
+              // Update basic info
+              document.getElementById('barangay-text').textContent = socid;
+              document.getElementById('batsoc').textContent = latestReading.batsoc;
+              document.getElementById('batv').textContent = latestReading.batv;
+              document.getElementById('batc').textContent = latestReading.batc;
+              document.getElementById('solv').textContent = latestReading.pv_voltage;
+              document.getElementById('solc').textContent = latestReading.pv_current;
+              document.getElementById('bulbv').textContent = latestReading.bulbv;
+              document.getElementById('curv').textContent = latestReading.curv;
+              
+              // Update last update time
+              const lastUpdate = new Date(latestReading.date).toLocaleString();
+              document.getElementById('last-update').textContent = lastUpdate;
+              
+              // Update status badge
+              const isActive = parseFloat(latestReading.batsoc) > 20.0;
+              const statusBadge = document.getElementById('status-badge');
+              statusBadge.textContent = isActive ? 'Active' : 'Inactive';
+              statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-danger'}`;
+              
+              // Update chart data
+              const chartData = readings.map(reading => ({
+                x: new Date(reading.date).getTime(),
+                y: parseFloat(reading.batsoc)
+              }));
+
+              this.detailsChart.updateSeries([{
+                name: 'Battery Level',
+                data: chartData
+              }]);
+            } else {
+              console.error("Failed to load streetlight details:", data.message);
+              alert("Error loading streetlight details: " + data.message);
+            }
+          } catch (error) {
+            console.error("Error loading streetlight details:", error);
+            alert("Failed to load streetlight details");
+          }
         });
       });
 
@@ -1903,6 +1955,47 @@ class StreetlightMap {
     } catch (error) {
       console.error("Error fetching streetlight data:", error);
       alert("Failed to load streetlight data");
+    }
+  }
+
+  // Add new method updateStreetlightDetails
+  updateStreetlightDetails(readings) {
+    if (!readings || readings.length === 0) return;
+    
+    const latestReading = readings[readings.length - 1];
+    
+    // Update basic info
+    const elements = {
+      'barangay-text': latestReading.socid,
+      'batsoc': latestReading.batsoc,
+      'batv': latestReading.batv,
+      'batc': latestReading.batc,
+      'solv': latestReading.solv, // Changed from pv_voltage to solv
+      'solc': latestReading.solc, // Changed from pv_current to solc
+      'bulbv': latestReading.bulbv,
+      'curv': latestReading.curv
+    };
+  
+    // Safely update elements if they exist
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      }
+    });
+  
+    // Update last update time
+    const lastUpdateElement = document.getElementById('last-update');
+    if (lastUpdateElement) {
+      lastUpdateElement.textContent = new Date(latestReading.date).toLocaleString();
+    }
+  
+    // Update status badge
+    const statusBadge = document.getElementById('status-badge');
+    if (statusBadge) {
+      const isActive = parseFloat(latestReading.batsoc) > 20.0;
+      statusBadge.textContent = isActive ? 'Active' : 'Inactive';
+      statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-danger'}`;
     }
   }
 }
