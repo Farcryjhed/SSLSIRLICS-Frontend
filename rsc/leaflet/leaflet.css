@@ -246,7 +246,7 @@ svg.leaflet-zoom-animated {
 .leaflet-tile-container {
 	pointer-events: none;
 	}
-
+/* diri na part mawala ang square or rectangle na black pero di na siya ma interactive*/
 .leaflet-marker-icon.leaflet-interactive,
 .leaflet-image-layer.leaflet-interactive,
 .leaflet-pane > svg path.leaflet-interactive,
@@ -254,6 +254,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
 	pointer-events: auto;
 	}
+/* diri na part mawala ang square or rectangle na black pero di na siya ma interactive*/
+	
 
 /* visual tweaks */
 
@@ -659,3 +661,5 @@ svg.leaflet-image-layer.leaflet-interactive path {
 		print-color-adjust: exact;
 		}
 	}
+
+	

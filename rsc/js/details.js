@@ -1,21 +1,14 @@
 let barangayData = null;
 
-console.log("Initializing details.js...");
-
 fetch("rsc/coordinates.json")
   .then((response) => response.json())
   .then((data) => {
     barangayData = data;
-    console.log("Coordinates data loaded:", {
-      provinces: Object.keys(data),
-      dataSize: JSON.stringify(data).length,
-    });
   })
   .catch((error) => console.error("Error loading coordinates:", error));
 
 const urlParams = new URLSearchParams(window.location.search);
 const socid = urlParams.get("socid");
-console.log("SOCID from URL:", socid);
 
 // Update your chartOptions to prevent timezone conversion
 const chartOptions = {
@@ -117,11 +110,83 @@ const chartOptions = {
   },
 };
 
-const chart = new ApexCharts(
-  document.querySelector("#charging-chart"),
-  chartOptions
-);
-chart.render();
+// Replace the existing chart initialization code
+let chart = null;
+let autoUpdateInterval = null; // Variable to store the interval ID
+
+// Check if chart container exists before initializing
+const chartContainer = document.querySelector("#charging-chart");
+if (chartContainer) {
+  chart = new ApexCharts(chartContainer, chartOptions);
+  chart.render();
+  // console.log("Chart initialized successfully");
+} else {
+  // console.error("Chart container #charging-chart not found in the DOM");
+}
+
+// Function to start auto-updates
+function startAutoUpdate(socid) {
+  // Clear any existing interval first
+  if (autoUpdateInterval) {
+    clearInterval(autoUpdateInterval);
+  }
+
+  // Set new interval for every 10 seconds
+  autoUpdateInterval = setInterval(() => {
+    // Show subtle loading indicator
+    const updateIndicator = document.getElementById("update-indicator");
+    if (updateIndicator) {
+      updateIndicator.innerHTML =
+        '<small class="text-muted"><i class="fas fa-sync fa-spin me-1"></i>Updating...</small>';
+    }
+
+    // Fetch fresh data
+    StreetlightQueries.getStreetlightDetails(socid)
+      .then(async (result) => {
+        if (result.status === "success") {
+          await updateStreetlightDetails(result.readings);
+
+          // Update timestamp for last refresh
+          const timestamp = new Date().toLocaleTimeString();
+          if (updateIndicator) {
+            updateIndicator.innerHTML = `<small class="text-muted">Last updated: ${timestamp}</small>`;
+          }
+        } else {
+          console.error("Auto update error:", result.message);
+          if (updateIndicator) {
+            updateIndicator.innerHTML =
+              '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Update failed</small>';
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Auto update error:", error);
+        if (updateIndicator) {
+          updateIndicator.innerHTML =
+            '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Update failed</small>';
+        }
+      });
+  }, 10000); // 10 seconds
+}
+
+// Function to stop auto-updates (useful when navigating away)
+function stopAutoUpdate() {
+  if (autoUpdateInterval) {
+    clearInterval(autoUpdateInterval);
+    autoUpdateInterval = null;
+  }
+}
+
+// Add event listeners for page visibility changes
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    // Pause updates when page is not visible to save resources
+    stopAutoUpdate();
+  } else if (document.visibilityState === "visible" && socid) {
+    // Resume updates when page becomes visible again
+    startAutoUpdate(socid);
+  }
+});
 
 function findLocation(socid) {
   console.log("Finding location for SOCID:", socid);
@@ -291,6 +356,16 @@ async function updateStreetlightDetails(readings) {
     })),
   });
 
+  updateChartData(chartData);
+}
+
+// Update the chart update function to check if chart exists
+function updateChartData(chartData) {
+  if (!chart) {
+    console.error("Cannot update chart: Chart was not initialized");
+    return;
+  }
+
   chart.updateSeries([
     {
       name: "Battery Level",
@@ -301,7 +376,7 @@ async function updateStreetlightDetails(readings) {
   chart.updateOptions({
     xaxis: {
       type: "datetime",
-      datetimeUTC: false, // Prevent timezone conversion - critical setting
+      datetimeUTC: false,
       labels: {
         datetimeFormatter: {
           year: "yyyy",
@@ -320,21 +395,69 @@ async function updateStreetlightDetails(readings) {
   });
 }
 
+// Helper function to find the status card
+function addUpdateIndicator() {
+  // Try to find the status card header using text content
+  const headers = document.querySelectorAll(".card-header");
+  let statusCard = null;
+
+  for (const header of headers) {
+    if (header.textContent.includes("Status")) {
+      statusCard = header;
+      break;
+    }
+  }
+
+  // If status card is found
+  if (statusCard) {
+    const updateIndicator = document.createElement("div");
+    updateIndicator.id = "update-indicator";
+    updateIndicator.className = "text-center mt-2";
+    updateIndicator.innerHTML =
+      '<small class="text-muted">Auto-updates enabled</small>';
+    statusCard.parentNode.appendChild(updateIndicator);
+    return true;
+  }
+  // Fallback: try to add it near the last update element
+  else {
+    const lastUpdateElement = document.getElementById("last-update");
+    if (lastUpdateElement) {
+      const container = lastUpdateElement.closest(".metric-value");
+      if (container) {
+        const updateIndicator = document.createElement("div");
+        updateIndicator.id = "update-indicator";
+        updateIndicator.className = "small text-muted mt-1";
+        updateIndicator.innerHTML = "Auto-updates enabled";
+        container.appendChild(updateIndicator);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Modify the existing SOCID fetch section to start auto-updates
 if (socid) {
   console.log("Fetching streetlight data for SOCID:", socid);
-  fetch(`api/endpoints/get_details.php?socid=${socid}`)
-    .then((response) => response.json())
-    .then(async (data) => {
-      console.log("API response:", data);
-      if (data.status === "success") {
-        const readings = Array.isArray(data.data) ? data.data : [data.data];
 
-        readings.sort((a, b) => new Date(a.date) - new Date(b.date));
+  // Use the centralized method from StreetlightQueries
+  StreetlightQueries.getStreetlightDetails(socid)
+    .then(async (result) => {
+      if (result.status === "success") {
+        await updateStreetlightDetails(result.readings);
 
-        await updateStreetlightDetails(readings);
+        // Add update indicator to the page
+        if (!addUpdateIndicator()) {
+          console.warn(
+            "Could not find a suitable place for the update indicator"
+          );
+        }
+
+        // Start auto-updates after initial load
+        startAutoUpdate(socid);
       } else {
-        console.error("API error:", data.message);
-        alert("Error: " + data.message);
+        console.error("API error:", result.message);
+        alert("Error: " + result.message);
       }
     })
     .catch((error) => {
@@ -342,5 +465,11 @@ if (socid) {
       alert("Failed to load streetlight data");
     });
 } else {
-
+  // console.error("No SOCID provided in URL");
+  // alert("No streetlight ID provided");
 }
+
+// Add a cleanup function when the page unloads
+window.addEventListener("beforeunload", () => {
+  stopAutoUpdate();
+});

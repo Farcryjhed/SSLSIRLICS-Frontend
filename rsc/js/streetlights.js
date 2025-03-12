@@ -31,12 +31,112 @@ class StreetlightMap {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
 
+        // Initialize GeoJSON layer group
+        this.geoJsonLayer = L.layerGroup().addTo(this.map);
+        this.geoJsonLayers = {};
+    
+        // Load and display GeoJSON with improved error handling
+        fetch('rsc/geojson/surigaodelsur.geojson')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            this.geoJsonLayer = L.geoJSON(data, {
+              style: {
+                color: '#1671cb',
+                weight: 2,
+                fillOpacity: 0.2,
+                fillColor: '#1671cb'
+              },
+              onEachFeature: (feature, layer) => {
+                // Add hover effect
+                layer.on({
+                  mouseover: (e) => {
+                    const layer = e.target;
+                    layer.setStyle({
+                      weight: 3,
+                      fillOpacity: 0.5,
+                      fillColor: '#2196f3'
+                    });
+                    layer.bringToFront();
+    
+                    // Show tooltip if feature has name
+                    if ( feature.properties.name) {
+                      layer.bindTooltip(feature.properties.name, {
+                        permanent: false,
+                        direction: 'center',
+                        className: 'area-tooltip'
+                      }).openTooltip();
+                    }
+                  },
+                  mouseout: (e) => {
+                    const layer = e.target;
+                    layer.setStyle({
+                      weight: 2,
+                      fillOpacity: 0.2,
+                      fillColor: '#1671cb'
+                    });
+                    layer.closeTooltip();
+                  },
+                  click: (e) => {
+                    // Handle click events
+                    const properties = e.target.feature.properties;
+                    if (properties && properties.name) {
+                      console.log(`Clicked area: ${properties.name}`);
+                      // Handle area click - e.g., zoom to area, show details, etc.
+                      this.handleAreaClick(properties);
+                    }
+                  }
+                });
+              }
+            }).addTo(this.map);
+    
+            // Store reference to GeoJSON layer
+            this.geoJsonLayers['ADS'] = this.geoJsonLayer;
+    
+   /*         // Fit map to GeoJSON bounds
+            if (this.geoJsonLayer.getBounds) {
+              // Fit bounds with padding
+              this.map.fitBounds(this.geoJsonLayer.getBounds(), {
+                padding: [50, 50]
+              });
+            
+              // Set transparent style for the layer
+              this.geoJsonLayer.setStyle({
+                color: 'transparent',
+                weight: 0,
+                fillOpacity: 0,
+                fillColor: 'transparent',
+                opacity: 0
+              });
+            }
+            
+    */
+            console.log('Successfully loaded GeoJSON');
+          })
+          .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+            alert('Failed to load map data. Please refresh the page.');
+          });
+
     // Add zoom control to top right
     L.control
       .zoom({
         position: "topright",
       })
       .addTo(this.map);
+  }
+
+  handleAreaClick(properties) {
+    // Handle area click events
+    if (properties.type === 'municipality') {
+      this.showMunicipalityMarkers(properties.name);
+    } else if (properties.type === 'barangay') {
+      this.showBarangayDetails(properties);
+    }
   }
 
   async loadCoordinates() {
@@ -58,10 +158,10 @@ class StreetlightMap {
     // Create the map
     this.map = L.map("map", {
       zoomControl: false,
-      zoomSnap: 0.1,    // Allows fractional zoom levels with 0.1 steps
-      zoomDelta: 0.1,   // Mouse wheel zoom changes by 0.1
-      wheelPxPerZoomLevel: 100  // Adjusts mouse wheel sensitivity
-    }).setView([center.lat, center.long], parseFloat(8.40));
+      zoomSnap: 0.1, // Allows fractional zoom levels with 0.1 steps
+      zoomDelta: 0.1, // Mouse wheel zoom changes by 0.1
+      wheelPxPerZoomLevel: 100, // Adjusts mouse wheel sensitivity
+    }).setView([center.lat, center.long], parseFloat(8.4));
 
     // Setup the map layers
     this.setupMap();
@@ -106,6 +206,8 @@ class StreetlightMap {
       long: count > 0 ? totalLong / count : 124.6319,
     };
   }
+
+  
 
   addProvinceMarkers() {
     const isMobile =
@@ -351,13 +453,8 @@ class StreetlightMap {
         const statsData = await statsResponse.json();
 
         if (statsData.status !== "success" || statsData.data.total === 0) {
-          console.log(
-            `Skipping ${municipalityName} - no matching streetlights`
-          );
           continue;
         }
-
-        console.log(`Municipality ${municipalityName} stats:`, statsData.data);
 
         // Create marker
         const marker = L.marker([municipalityData.lat, municipalityData.long], {
@@ -369,28 +466,96 @@ class StreetlightMap {
           }),
         });
 
+        // Modern municipality popup - replace the existing popup content in showMunicipalityMarkers method
+        // Inside your showMunicipalityMarkers method where you create the popupContent
         const popupContent = `
-          <div class="p-3">
-            <h6 class="fw-bold mb-3">${municipalityName}</h6>
+          <div class="modern-popup p-3">
+            <div class="popup-header mb-3">
+              <h6 class="fw-bold mb-0">${municipalityName}</h6>
+            </div>
             
-            <div class="row text-center mb-3">
-              <div class="col-4">
+            <div class="stats-grid mb-3">
+              <div class="stat-box">
                 <div class="stat-value">${statsData.data.total}</div>
-                <div class="stat-label text-muted">Total</div>
+                <div class="stat-label">Total</div>
               </div>
-              <div class="col-4">
-                <div class="stat-value text-success">${statsData.data.active}</div>
-                <div class="stat-label text-muted">Active</div>
+              <div class="stat-box active">
+                <div class="stat-value">${statsData.data.active}</div>
+                <div class="stat-label">Active</div>
               </div>
-              <div class="col-4">
-                <div class="stat-value text-danger">${statsData.data.inactive}</div>
-                <div class="stat-label text-muted">Inactive</div>
+              <div class="stat-box inactive">
+                <div class="stat-value">${statsData.data.inactive}</div>
+                <div class="stat-label">Inactive</div>
               </div>
             </div>
             
             <button class="btn btn-sm btn-primary w-100 view-details">View Details</button>
           </div>
         `;
+
+        // Add this to your code right before defining the popup content
+        if (!document.getElementById("modern-popup-styles")) {
+          const styleSheet = document.createElement("style");
+          styleSheet.id = "modern-popup-styles";
+          styleSheet.textContent = `
+            .modern-popup {
+              font-family: system-ui, -apple-system, sans-serif;
+            }
+            
+            .modern-popup .popup-header {
+              border-bottom: 1px solid #eee;
+              padding-bottom: 8px;
+            }
+            
+            .modern-popup .stats-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 8px;
+            }
+            
+            .modern-popup .stat-box {
+              padding: 8px 4px;
+              border-radius: 6px;
+              text-align: center;
+              background: #f8f9fa;
+            }
+            
+            .modern-popup .stat-box.active {
+              background: rgba(40, 167, 69, 0.1);
+            }
+            
+            .modern-popup .stat-box.active .stat-value {
+              color: #28a745;
+            }
+            
+            .modern-popup .stat-box.inactive {
+              background: rgba(220, 53, 69, 0.1);
+            }
+            
+            .modern-popup .stat-box.inactive .stat-value {
+              color: #dc3545;
+            }
+            
+            .modern-popup .stat-value {
+              font-weight: bold;
+              font-size: 1.2rem;
+            }
+            
+            .modern-popup .stat-label {
+              font-size: 0.8rem;
+              color: #6c757d;
+            }
+            
+            .modern-popup .view-details {
+              transition: all 0.2s;
+            }
+            
+            .modern-popup .view-details:hover {
+              transform: translateY(-1px);
+            }
+          `;
+          document.head.appendChild(styleSheet);
+        }
 
         marker.bindPopup(popupContent);
         marker.on("popupopen", (e) => {
@@ -408,7 +573,6 @@ class StreetlightMap {
         });
 
         this.municipalityMarkers.addLayer(marker);
-        console.log(`Added marker for ${municipalityName}`);
       }
     } catch (error) {
       console.error("Error showing municipality markers:", error);
@@ -417,7 +581,6 @@ class StreetlightMap {
 
   async showBarangayMarkers(province, municipality) {
     this.barangayMarkers.clearLayers();
-    console.log("Showing barangay markers for:", province, municipality);
 
     try {
       // Get barangays from coordinates
@@ -444,11 +607,8 @@ class StreetlightMap {
         const statsData = await statsResponse.json();
 
         if (statsData.status !== "success" || statsData.data.total === 0) {
-          console.log(`Skipping ${barangayName} - no streetlights found`);
           continue;
         }
-
-        console.log(`Barangay ${barangayName} stats:`, statsData.data);
 
         const marker = L.marker([data.lat, data.long], {
           icon: L.divIcon({
@@ -474,7 +634,6 @@ class StreetlightMap {
         );
 
         marker.bindPopup(popupContent);
-
 
         this.barangayMarkers.addLayer(marker);
       }
@@ -826,53 +985,67 @@ class StreetlightMap {
       detailsContainer.querySelectorAll(".view-details").forEach((button) => {
         button.addEventListener("click", async () => {
           const socid = button.dataset.socid;
-          console.log("View details clicked for SOCID:", socid);
-          
+
           try {
             // First fetch the data
-            const response = await fetch(`api/endpoints/get_details.php?socid=${socid}`);
+            const response = await fetch(
+              `api/endpoints/get_details.php?socid=${socid}`
+            );
             const data = await response.json();
-            
+
             if (data.status === "success") {
               // Create and show popup only after successful data fetch
               const popup = this.createDetailsPopup(socid);
-              
+
               // Update the details immediately with the fetched data
-              const readings = Array.isArray(data.data) ? data.data : [data.data];
+              const readings = Array.isArray(data.data)
+                ? data.data
+                : [data.data];
               const latestReading = readings[readings.length - 1];
-              
+
               // Update basic info
-              document.getElementById('barangay-text').textContent = socid;
-              document.getElementById('batsoc').textContent = latestReading.batsoc;
-              document.getElementById('batv').textContent = latestReading.batv;
-              document.getElementById('batc').textContent = latestReading.batc;
-              document.getElementById('solv').textContent = latestReading.pv_voltage;
-              document.getElementById('solc').textContent = latestReading.pv_current;
-              document.getElementById('bulbv').textContent = latestReading.bulbv;
-              document.getElementById('curv').textContent = latestReading.curv;
-              
+              document.getElementById("barangay-text").textContent = socid;
+              document.getElementById("batsoc").textContent =
+                latestReading.batsoc;
+              document.getElementById("batv").textContent = latestReading.batv;
+              document.getElementById("batc").textContent = latestReading.batc;
+              document.getElementById("solv").textContent =
+                latestReading.pv_voltage;
+              document.getElementById("solc").textContent =
+                latestReading.pv_current;
+              document.getElementById("bulbv").textContent =
+                latestReading.bulbv;
+              document.getElementById("curv").textContent = latestReading.curv;
+
               // Update last update time
               const lastUpdate = new Date(latestReading.date).toLocaleString();
-              document.getElementById('last-update').textContent = lastUpdate;
-              
+              document.getElementById("last-update").textContent = lastUpdate;
+
               // Update status badge
               const isActive = parseFloat(latestReading.batsoc) > 20.0;
-              const statusBadge = document.getElementById('status-badge');
-              statusBadge.textContent = isActive ? 'Active' : 'Inactive';
-              statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-danger'}`;
-              
+              const statusBadge = document.getElementById("status-badge");
+              statusBadge.textContent = isActive ? "Active" : "Inactive";
+              statusBadge.className = `badge ${
+                isActive ? "bg-success" : "bg-danger"
+              }`;
+
               // Update chart data
-              const chartData = readings.map(reading => ({
+              const chartData = readings.map((reading) => ({
                 x: new Date(reading.date).getTime(),
-                y: parseFloat(reading.batsoc)
+                y: parseFloat(reading.batsoc),
               }));
 
-              this.detailsChart.updateSeries([{
-                name: 'Battery Level',
-                data: chartData
-              }]);
+              this.detailsChart.updateSeries([
+                {
+                  name: "Battery Level",
+                  data: chartData,
+                },
+              ]);
             } else {
-              console.error("Failed to load streetlight details:", data.message);
+              console.error(
+                "Failed to load streetlight details:",
+                data.message
+              );
               alert("Error loading streetlight details: " + data.message);
             }
           } catch (error) {
@@ -897,10 +1070,6 @@ class StreetlightMap {
           .setContent(detailsContainer)
           .openOn(this.map);
       } else {
-        // If marker not found, show popup at map center
-        console.warn(
-          `Marker not found for barangay ${barangay.name}. Showing popup at map center.`
-        );
         L.popup(popupOptions)
           .setLatLng(this.map.getCenter())
           .setContent(detailsContainer)
@@ -1239,7 +1408,6 @@ class StreetlightMap {
 
   async updateStatistics() {
     try {
-      console.log("Updating statistics...");
       const data = await StreetlightQueries.getAllData();
 
       if (data.status === "success") {
@@ -1258,7 +1426,6 @@ class StreetlightMap {
         });
 
         const totalCount = Object.keys(latestReadings).length;
-        console.log(`Total unique streetlights: ${totalCount}`);
 
         const oneHourAgo = new Date();
         oneHourAgo.setHours(oneHourAgo.getHours() - 1);
@@ -1268,15 +1435,11 @@ class StreetlightMap {
 
           // Check if reading is recent
           if (readingDate < oneHourAgo) {
-            console.log(`${light.socid} inactive - old reading`);
             return false;
           }
 
           const batteryLevel = parseFloat(light.batsoc);
           if (batteryLevel <= 20.0) {
-            console.log(
-              `${light.socid} inactive - low battery: ${batteryLevel}%`
-            );
             return false;
           }
 
@@ -1291,10 +1454,6 @@ class StreetlightMap {
             const isActive = pvVoltage > 12.0 && pvCurrent > 0.1;
 
             if (!isActive) {
-              console.log(
-                `${light.socid} inactive - daytime criteria not met:`,
-                `PV: ${pvVoltage}V, ${pvCurrent}A`
-              );
             }
             return isActive;
           } else {
@@ -1304,10 +1463,6 @@ class StreetlightMap {
             const isActive = bulbVoltage > 10.0 && batteryCurrent < -0.1;
 
             if (!isActive) {
-              console.log(
-                `${light.socid} inactive - nighttime criteria not met:`,
-                `Bulb: ${bulbVoltage}V, Current: ${batteryCurrent}A`
-              );
             }
             return isActive;
           }
@@ -1319,12 +1474,6 @@ class StreetlightMap {
         this.animateCounter("total-count", totalCount);
         this.animateCounter("active-count", activeCount);
         this.animateCounter("inactive-count", inactiveCount);
-
-        console.log("Statistics updated:", {
-          total: totalCount,
-          active: activeCount,
-          inactive: inactiveCount,
-        });
       }
     } catch (error) {
       console.error("Failed to update statistics:", error);
@@ -1392,8 +1541,7 @@ class StreetlightMap {
       return;
     }
 
-    const filePath = `rsc/geojson/${regionFiles[region]}`;
-    console.log(`Loading GeoJSON from: ${filePath}`); // Debug log
+
 
     fetch(filePath)
       .then((response) => {
@@ -1421,8 +1569,6 @@ class StreetlightMap {
         // Store reference and add to map
         this.geoJsonLayers[region] = geoJsonLayer;
         this.geoJsonLayer.addLayer(geoJsonLayer);
-
-        console.log(`Successfully loaded GeoJSON for ${region}`); // Debug log
       })
       .catch((error) => {
         console.error(`Error loading GeoJSON for ${region}:`, error);
@@ -1458,55 +1604,37 @@ class StreetlightMap {
     const viewButton = container.querySelector(".view-streetlights");
     if (viewButton) {
       viewButton.addEventListener("click", () => {
-        // Here you can add code to show detailed streetlight list
-        console.log(`Showing streetlights for ${barangay.name}`);
         this.showMoreDetailsStreetLightsPopup(barangay);
       });
     }
   }
 
   createBarangayPopupWithStats(barangayName, municipality, province, stats) {
-    const container = L.DomUtil.create("div", "p-3 barangay-popup");
+    const container = L.DomUtil.create("div", "modern-popup p-3");
 
     container.innerHTML = `
-      <div class="text-center">
-        <h5 class="fw-bold mb-3">${barangayName}</h5>
-        
-        <div class="row text-center mb-3">
-          <div class="col-4">
-            <div class="stat-value">${stats.total}</div>
-            <div class="stat-label text-muted small">Total</div>
-          </div>
-          <div class="col-4">
-            <div class="stat-value text-success">${stats.active}</div>
-            <div class="stat-label text-muted small">Active</div>
-          </div>
-          <div class="col-4">
-            <div class="stat-value text-danger">${stats.inactive}</div>
-            <div class="stat-label text-muted small">Inactive</div>
-          </div>
-        </div>
-        
-        <button class="btn btn-primary view-details mb-2">More Details</button>
+      <div class="popup-header mb-3">
+        <h6 class="fw-bold mb-0">${barangayName}</h6>
+        <div class="text-muted small">${municipality}, ${province}</div>
       </div>
+      
+      <div class="stats-grid mb-3">
+        <div class="stat-box">
+          <div class="stat-value">${stats.total}</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-box active">
+          <div class="stat-value">${stats.active}</div>
+          <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-box inactive">
+          <div class="stat-value">${stats.inactive}</div>
+          <div class="stat-label">Inactive</div>
+        </div>
+      </div>
+      
+      <button class="btn btn-sm btn-primary w-100 view-details">View Streetlights</button>
     `;
-
-    // Add styles if not added already
-    if (!document.getElementById("barangay-popup-styles")) {
-      const styleSheet = document.createElement("style");
-      styleSheet.id = "barangay-popup-styles";
-      styleSheet.textContent = `
-        .barangay-popup .stat-value {
-          font-size: 1.2rem;
-          font-weight: bold;
-          line-height: 1.2;
-        }
-        .barangay-popup .stat-label {
-          font-size: 0.8rem;
-        }
-      `;
-      document.head.appendChild(styleSheet);
-    }
 
     // Add event listener for view details button
     setTimeout(() => {
@@ -1611,8 +1739,11 @@ class StreetlightMap {
 
   // Add this function to your StreetlightMap class
   createDetailsPopup(socid) {
+    // Clean up any previous interval
+    this.cleanupAutoUpdate();
+
     // Create popup styles
-    const styleSheet = document.createElement('style');
+    const styleSheet = document.createElement("style");
     styleSheet.textContent = `
       .details-popup-overlay {
         position: fixed;
@@ -1687,10 +1818,10 @@ class StreetlightMap {
       }
     `;
     document.head.appendChild(styleSheet);
-  
+
     // Create popup HTML
-    const popup = document.createElement('div');
-    popup.className = 'details-popup-overlay';
+    const popup = document.createElement("div");
+    popup.className = "details-popup-overlay";
     popup.innerHTML = `
       <div class="details-popup-content">
         <button class="details-close-btn">&times;</button>
@@ -1852,130 +1983,291 @@ class StreetlightMap {
         </div>
       </div>
     `;
-  
+
     // Add event listeners
-    const closeBtn = popup.querySelector('.details-close-btn');
-    closeBtn.addEventListener('click', () => popup.remove());
-  
-    popup.addEventListener('click', (e) => {
-      if (e.target.classList.contains('details-popup-overlay')) {
+    const closeBtn = popup.querySelector(".details-close-btn");
+    closeBtn.addEventListener("click", () => {
+      this.cleanupAutoUpdate(); // Clean up interval when popup is closed
+      popup.remove();
+    });
+
+    popup.addEventListener("click", (e) => {
+      if (e.target.classList.contains("details-popup-overlay")) {
+        this.cleanupAutoUpdate(); // Clean up interval when popup is closed
         popup.remove();
       }
     });
-  
+
     // Add popup to body
     document.body.appendChild(popup);
-  
+
     // Initialize chart with updated options
     const chartOptions = {
       chart: {
-        height: '100%',
-        width: '100%',
-        type: 'line',
-        background: '#fff',
+        height: "100%",
+        width: "100%",
+        type: "line",
+        background: "#fff",
         animations: {
           enabled: true,
-          easing: 'linear',
+          easing: "linear",
         },
         toolbar: {
-          show: false
-        }
+          show: false,
+        },
       },
-      series: [{
-        name: 'Battery Level',
-        data: []
-      }],
+      series: [
+        {
+          name: "Battery Level",
+          data: [],
+        },
+      ],
       xaxis: {
-        type: 'datetime',
+        type: "datetime",
         labels: {
           datetimeFormatter: {
-            year: 'yyyy',
-            month: 'MMM \'yy',
-            day: 'dd MMM',
-            hour: 'HH:mm'
-          }
-        }
+            year: "yyyy",
+            month: "MMM 'yy",
+            day: "dd MMM",
+            hour: "HH:mm",
+          },
+        },
       },
       yaxis: {
         min: 0,
         max: 100,
         title: {
-          text: 'Battery Level (%)'
-        }
+          text: "Battery Level (%)",
+        },
       },
       stroke: {
-        curve: 'smooth',
-        width: 2
+        curve: "smooth",
+        width: 2,
       },
-      colors: ['#28a745']
+      colors: ["#28a745"],
     };
-  
+
     // Initialize chart after popup is in DOM
     const chart = new ApexCharts(
-      popup.querySelector('#charging-chart'),
+      popup.querySelector("#charging-chart"),
       chartOptions
     );
     chart.render();
-  
+
     // Store chart instance for updates
     this.detailsChart = chart;
-  
+
     // Load data
     this.loadStreetlightData(socid);
-  
+
     return popup;
   }
-  
+
   async loadStreetlightData(socid) {
     try {
-      const response = await fetch(`api/endpoints/get_details.php?socid=${socid}`);
+      // Add a popup update indicator if not exists
+      let updateIndicator = document.getElementById("popup-update-indicator");
+      if (!updateIndicator) {
+        updateIndicator = document.createElement("div");
+        updateIndicator.id = "popup-update-indicator";
+        updateIndicator.className = "text-center mt-2 mb-3";
+        updateIndicator.innerHTML =
+          '<small class="text-muted">Loading data...</small>';
+
+        // Insert after the title
+        const title = document.getElementById("barangay-text");
+        if (title && title.parentNode) {
+          title.parentNode.insertBefore(updateIndicator, title.nextSibling);
+        }
+      }
+
+      const response = await fetch(
+        `api/endpoints/get_details.php?socid=${socid}`
+      );
       const data = await response.json();
-      
+
       if (data.status === "success") {
         const readings = Array.isArray(data.data) ? data.data : [data.data];
         readings.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
+
         // Update chart data
-        const chartData = readings.map(reading => ({
+        const chartData = readings.map((reading) => ({
           x: new Date(reading.date).getTime(),
-          y: parseFloat(reading.batsoc)
+          y: parseFloat(reading.batsoc),
         }));
-  
-        this.detailsChart.updateSeries([{
-          name: 'Battery Level',
-          data: chartData
-        }]);
-  
+
+        this.detailsChart.updateSeries([
+          {
+            name: "Battery Level",
+            data: chartData,
+          },
+        ]);
+
         // Update other details
         this.updateStreetlightDetails(readings);
+
+        // Update indicator text
+        if (updateIndicator) {
+          updateIndicator.innerHTML = `<small class="text-muted">Last refresh: ${new Date().toLocaleTimeString()}</small>`;
+        }
+
+        // Start auto-update if not already running
+        this.setupAutoUpdate(socid);
       } else {
         console.error("API error:", data.message);
+        if (updateIndicator) {
+          updateIndicator.innerHTML =
+            '<small class="text-danger">Error loading data</small>';
+        }
         alert("Error: " + data.message);
       }
     } catch (error) {
       console.error("Error fetching streetlight data:", error);
+      const updateIndicator = document.getElementById("popup-update-indicator");
+      if (updateIndicator) {
+        updateIndicator.innerHTML =
+          '<small class="text-danger">Failed to load data</small>';
+      }
       alert("Failed to load streetlight data");
     }
   }
 
-  // Add new method updateStreetlightDetails
+  // Add new method for auto-updates
+  setupAutoUpdate(socid) {
+    // Clear any existing interval
+    if (this.popupUpdateInterval) {
+      clearInterval(this.popupUpdateInterval);
+    }
+
+    // Set new interval for 10-second updates
+    this.popupUpdateInterval = setInterval(async () => {
+      // Don't update if popup is no longer in the DOM
+      if (!document.getElementById("charging-chart")) {
+        clearInterval(this.popupUpdateInterval);
+        return;
+      }
+
+      // Show updating indicator
+      const updateIndicator = document.getElementById("popup-update-indicator");
+      if (updateIndicator) {
+        updateIndicator.innerHTML =
+          '<small class="text-muted"><i class="fas fa-sync fa-spin me-1"></i>Updating...</small>';
+      }
+
+      try {
+        // Fetch fresh data using StreetlightQueries
+        const result = await StreetlightQueries.getStreetlightDetails(socid);
+
+        if (result.status === "success") {
+          // Update chart data
+          const chartData = result.readings.map((reading) => ({
+            x: new Date(reading.date).getTime(),
+            y: parseFloat(reading.batsoc),
+          }));
+
+          // Update chart if it still exists
+          if (this.detailsChart) {
+            this.detailsChart.updateSeries([
+              {
+                name: "Battery Level",
+                data: chartData,
+              },
+            ]);
+          }
+
+          // Update other details
+          this.updateStreetlightDetails(result.readings);
+
+          // Update indicator
+          if (updateIndicator) {
+            updateIndicator.innerHTML = `<small class="text-muted">Last refresh: ${new Date().toLocaleTimeString()}</small>`;
+          }
+        } else {
+          console.error("Auto-update error:", result.message);
+          if (updateIndicator) {
+            updateIndicator.innerHTML =
+              '<small class="text-danger">Update failed</small>';
+          }
+        }
+      } catch (error) {
+        console.error("Auto-update error:", error);
+        if (updateIndicator) {
+          updateIndicator.innerHTML =
+            '<small class="text-danger">Update failed</small>';
+        }
+      }
+    }, 10000);
+  }
+
+  // Add cleanup method to the class
+  cleanupAutoUpdate() {
+    if (this.popupUpdateInterval) {
+      clearInterval(this.popupUpdateInterval);
+      this.popupUpdateInterval = null;
+    }
+  }
+
   updateStreetlightDetails(readings) {
-    if (!readings || readings.length === 0) return;
-    
+    if (!readings || readings.length === 0) {
+      console.error("No readings data available");
+      return;
+    }
+
     const latestReading = readings[readings.length - 1];
-    
-    // Update basic info
-    const elements = {
-      'barangay-text': latestReading.socid,
-      'batsoc': latestReading.batsoc,
-      'batv': latestReading.batv,
-      'batc': latestReading.batc,
-      'solv': latestReading.solv, // Changed from pv_voltage to solv
-      'solc': latestReading.solc, // Changed from pv_current to solc
-      'bulbv': latestReading.bulbv,
-      'curv': latestReading.curv
+
+    let locationText = latestReading.socid; // Default fallback text
+
+    // Parse SOCID to get municipality code and barangay code
+    if (latestReading.socid && latestReading.socid.includes("-")) {
+      const [municipalityCode, fullBarangayId] = latestReading.socid.split("-");
+      const barangayPrefix = fullBarangayId.substring(0, 3);
+
+      // Search through coordinates.json to find the location
+      for (const province in this.coordinates) {
+        const municipalities = this.coordinates[province].municipalities;
+
+        for (const municipality in municipalities) {
+          if (
+            municipalities[municipality].municipality_code === municipalityCode
+          ) {
+            // Found matching municipality
+            const barangays = municipalities[municipality].barangays;
+            let barangayName = "Unknown Area";
+
+            // Look for matching barangay
+            for (const barangay in barangays) {
+              if (barangays[barangay].barangay_code === barangayPrefix) {
+                barangayName = barangay;
+                break;
+              }
+            }
+
+            // Set location text
+            locationText = `${barangayName}, ${municipality}, ${province}`;
+            break;
+          }
+        }
+      }
+    }
+
+    // Format numeric values for display (remove trailing zeros)
+    const formatValue = (value) => {
+      if (value === undefined || value === null || isNaN(value)) return "N/A";
+      return parseFloat(parseFloat(value).toFixed(2));
     };
-  
+
+    // Update UI elements with data
+    const elements = {
+      "barangay-text": locationText, // Use location name instead of SOCID
+      batsoc: formatValue(latestReading.batsoc),
+      batv: formatValue(latestReading.batv),
+      batc: formatValue(latestReading.batc),
+      solv: formatValue(latestReading.solv || latestReading.pv_voltage),
+      solc: formatValue(latestReading.solc || latestReading.pv_current),
+      bulbv: formatValue(latestReading.bulbv),
+      curv: formatValue(latestReading.curv),
+    };
+
     // Safely update elements if they exist
     Object.entries(elements).forEach(([id, value]) => {
       const element = document.getElementById(id);
@@ -1983,19 +2275,29 @@ class StreetlightMap {
         element.textContent = value;
       }
     });
-  
+
     // Update last update time
-    const lastUpdateElement = document.getElementById('last-update');
+    const lastUpdateElement = document.getElementById("last-update");
     if (lastUpdateElement) {
-      lastUpdateElement.textContent = new Date(latestReading.date).toLocaleString();
+      // Format date for readability
+      const date = new Date(latestReading.date);
+      const formattedDate = date.toLocaleString(undefined, {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+      lastUpdateElement.textContent = formattedDate;
     }
-  
+
     // Update status badge
-    const statusBadge = document.getElementById('status-badge');
+    const statusBadge = document.getElementById("status-badge");
     if (statusBadge) {
       const isActive = parseFloat(latestReading.batsoc) > 20.0;
-      statusBadge.textContent = isActive ? 'Active' : 'Inactive';
-      statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-danger'}`;
+      statusBadge.textContent = isActive ? "Active" : "Inactive";
+      statusBadge.className = `badge ${isActive ? "bg-success" : "bg-danger"}`;
     }
   }
 }

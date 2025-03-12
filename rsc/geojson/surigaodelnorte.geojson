@@ -1881,13 +1881,6 @@
           }
         ]
       },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          125.5464831,
-          9.7022868
-        ]
-      },
       "id": "node/305704369"
     },
     {
@@ -1918,13 +1911,6 @@
               "wikipedia": "en:Surigao del Norte"
             }
           }
-        ]
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          125.4935697,
-          9.7905028
         ]
       },
       "id": "node/319858811"

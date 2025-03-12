@@ -12607,13 +12607,6 @@
           }
         ]
       },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          125.9116338,
-          8.6023961
-        ]
-      },
       "id": "node/198518624"
     },
     {
@@ -12643,13 +12636,6 @@
               "wikipedia": "en:Agusan del Sur"
             }
           }
-        ]
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          125.71,
-          8.36
         ]
       },
       "id": "node/305704587"
