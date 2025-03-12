@@ -1,7 +1,7 @@
 class StreetlightMap {
   constructor() {
     this.zoomLevels = {
-      city: 11,
+      city: 10.13,
       municipality: 14,
     };
 
@@ -58,7 +58,10 @@ class StreetlightMap {
     // Create the map
     this.map = L.map("map", {
       zoomControl: false,
-    }).setView([center.lat, center.long], 9);
+      zoomSnap: 0.1,    // Allows fractional zoom levels with 0.1 steps
+      zoomDelta: 0.1,   // Mouse wheel zoom changes by 0.1
+      wheelPxPerZoomLevel: 100  // Adjusts mouse wheel sensitivity
+    }).setView([center.lat, center.long], parseFloat(8.40));
 
     // Setup the map layers
     this.setupMap();
@@ -149,6 +152,7 @@ class StreetlightMap {
               e.popup._contentNode.querySelector(".zoom-to-province");
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
+                this.provinceMarkers.removeLayer(marker); // Remove marker immediately
                 this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
                 this.showMunicipalityMarkers(province);
                 marker.closePopup();
@@ -171,6 +175,7 @@ class StreetlightMap {
           });
 
           marker.on("click", () => {
+            this.provinceMarkers.removeLayer(marker); // Remove marker immediately
             this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
             this.showMunicipalityMarkers(province);
           });
@@ -469,6 +474,7 @@ class StreetlightMap {
         );
 
         marker.bindPopup(popupContent);
+
 
         this.barangayMarkers.addLayer(marker);
       }
@@ -818,9 +824,61 @@ class StreetlightMap {
 
       // Add event listeners for view details buttons
       detailsContainer.querySelectorAll(".view-details").forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
           const socid = button.dataset.socid;
-          window.location.href = `details.html?socid=${socid}`;
+          console.log("View details clicked for SOCID:", socid);
+          
+          try {
+            // First fetch the data
+            const response = await fetch(`api/endpoints/get_details.php?socid=${socid}`);
+            const data = await response.json();
+            
+            if (data.status === "success") {
+              // Create and show popup only after successful data fetch
+              const popup = this.createDetailsPopup(socid);
+              
+              // Update the details immediately with the fetched data
+              const readings = Array.isArray(data.data) ? data.data : [data.data];
+              const latestReading = readings[readings.length - 1];
+              
+              // Update basic info
+              document.getElementById('barangay-text').textContent = socid;
+              document.getElementById('batsoc').textContent = latestReading.batsoc;
+              document.getElementById('batv').textContent = latestReading.batv;
+              document.getElementById('batc').textContent = latestReading.batc;
+              document.getElementById('solv').textContent = latestReading.pv_voltage;
+              document.getElementById('solc').textContent = latestReading.pv_current;
+              document.getElementById('bulbv').textContent = latestReading.bulbv;
+              document.getElementById('curv').textContent = latestReading.curv;
+              
+              // Update last update time
+              const lastUpdate = new Date(latestReading.date).toLocaleString();
+              document.getElementById('last-update').textContent = lastUpdate;
+              
+              // Update status badge
+              const isActive = parseFloat(latestReading.batsoc) > 20.0;
+              const statusBadge = document.getElementById('status-badge');
+              statusBadge.textContent = isActive ? 'Active' : 'Inactive';
+              statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-danger'}`;
+              
+              // Update chart data
+              const chartData = readings.map(reading => ({
+                x: new Date(reading.date).getTime(),
+                y: parseFloat(reading.batsoc)
+              }));
+
+              this.detailsChart.updateSeries([{
+                name: 'Battery Level',
+                data: chartData
+              }]);
+            } else {
+              console.error("Failed to load streetlight details:", data.message);
+              alert("Error loading streetlight details: " + data.message);
+            }
+          } catch (error) {
+            console.error("Error loading streetlight details:", error);
+            alert("Failed to load streetlight details");
+          }
         });
       });
 
@@ -1549,5 +1607,395 @@ class StreetlightMap {
     });
 
     return foundMarker;
+  }
+
+  // Add this function to your StreetlightMap class
+  createDetailsPopup(socid) {
+    // Create popup styles
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+      .details-popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+      }
+  
+      .details-popup-content {
+        background: white;
+        width: 95%;
+        max-width: 1200px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        position: relative;
+        padding: 20px;
+      }
+  
+      .details-close-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        font-size: 24px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: #666;
+        z-index: 2001;
+      }
+  
+      .details-close-btn:hover {
+        color: #000;
+      }
+  
+      .details-chart-container {
+        min-height: 400px;
+      }
+    `;
+    styleSheet.textContent += `
+      .chart-section {
+        position: relative;
+        width: 100%;
+        background: #fff;
+        border-radius: 8px;
+        padding: 15px;
+      }
+  
+      .chart-container {
+        position: relative;
+        width: 100%;
+        height: 400px !important;
+        min-height: 400px;
+      }
+  
+      #charging-chart {
+        width: 100%;
+        height: 100% !important;
+      }
+  
+      .apexcharts-canvas {
+        background: #fff;
+        width: 100% !important;
+        height: 100% !important;
+      }
+    `;
+    document.head.appendChild(styleSheet);
+  
+    // Create popup HTML
+    const popup = document.createElement('div');
+    popup.className = 'details-popup-overlay';
+    popup.innerHTML = `
+      <div class="details-popup-content">
+        <button class="details-close-btn">&times;</button>
+        <div class="container">
+          <div class="row g-4">
+            <!-- Left Side - Metric Cards -->
+            <div class="col-md-4">
+              <div class="sticky-top" style="top: 20px">
+                <div class="fw-bold fs-4 mb-3 text-center">
+                  <span id="barangay-text">-</span>
+                </div>
+                <!-- Solar Panel Card -->
+                <div class="card shadow-sm mb-4 hover-lift">
+                  <div class="card-header bg-gradient">
+                    <h5 class="mb-0">
+                      <i class="fas fa-solar-panel me-2 solar-icon"></i>Solar Panel
+                    </h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="row">
+                      <div class="col-6">
+                        <i class="fas fa-bolt metric-icon solar-icon"></i>
+                        <div class="metric-value">
+                          <span id="solv">-</span> V
+                        </div>
+                        <div class="metric-label">Voltage</div>
+                      </div>
+                      <div class="col-6">
+                        <i class="fas fa-charging-station metric-icon solar-icon"></i>
+                        <div class="metric-value">
+                          <span id="solc">-</span> A
+                        </div>
+                        <div class="metric-label">Current</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+  
+                <!-- Status Card -->
+                <div class="card shadow-sm mb-4 hover-lift">
+                  <div class="card-header bg-gradient">
+                    <h5 class="mb-0">
+                      <i class="fas fa-info-circle me-2 status-icon"></i>Status
+                    </h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="row">
+                      <div class="col-6">
+                        <i class="fas fa-clock metric-icon status-icon"></i>
+                        <div class="metric-value">
+                          <span id="last-update">-</span>
+                        </div>
+                        <div class="metric-label">Last Updated</div>
+                      </div>
+                      <div class="col-6">
+                        <i class="fas fa-power-off metric-icon status-icon"></i>
+                        <div class="metric-value">
+                          <span id="status-badge" class="badge bg-secondary">-</span>
+                        </div>
+                        <div class="metric-label">Current Status</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+  
+                <!-- Load Card -->
+                <div class="card shadow-sm hover-lift">
+                  <div class="card-header bg-gradient">
+                    <h5 class="mb-0">
+                      <i class="fas fa-lightbulb me-2 load-icon"></i>Load
+                    </h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="row">
+                      <div class="col-6">
+                        <i class="fas fa-bolt metric-icon load-icon"></i>
+                        <div class="metric-value">
+                          <span id="bulbv">-</span> V
+                        </div>
+                        <div class="metric-label">Voltage</div>
+                      </div>
+                      <div class="col-6">
+                        <i class="fas fa-charging-station metric-icon load-icon"></i>
+                        <div class="metric-value">
+                          <span id="curv">-</span> A
+                        </div>
+                        <div class="metric-label">Current</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <!-- Battery & Charging History -->
+            <div class="col-md-8">
+              <div class="card shadow hover-lift h-100">
+                <div class="card-header bg-gradient">
+                  <h5 class="mb-0">
+                    <i class="fas fa-battery-three-quarters me-2 battery-icon"></i>Battery & Charging History
+                  </h5>
+                </div>
+                <div class="card-body p-4">
+                  <!-- Battery Info Section -->
+                  <div class="row mb-4">
+                    <div class="col-md-4">
+                      <div
+                        class="battery-status-main p-4 rounded bg-light h-100">
+                        <i
+                          class="fas fa-battery-three-quarters battery-icon"
+                          style="font-size: 3rem"></i>
+                        <div class="display-4 mt-2">
+                          <span id="batsoc">-</span>%
+                        </div>
+                        <div class="text-muted">State of Charge</div>
+                      </div>
+                    </div>
+
+                    <div class="col-md-8">
+                      <div class="row h-100">
+                        <div class="col-md-6">
+                          <div
+                            class="battery-status-main p-4 rounded bg-light h-100">
+                            <i
+                              class="fas fa-bolt battery-icon"
+                              style="font-size: 3rem"></i>
+                            <div class="display-5 mt-2">
+                              <span id="batv">-</span> V
+                            </div>
+                            <div class="text-muted">Battery Voltage</div>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div
+                            class="battery-status-main p-4 rounded bg-light h-100">
+                            <i
+                              class="fas fa-charging-station battery-icon"
+                              style="font-size: 3rem"></i>
+                            <div class="display-5 mt-2">
+                              <span id="batc">-</span> A
+                            </div>
+                            <div class="text-muted">Charging Current</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Chart Section -->
+                  <div class="chart-section">
+                    <div class="chart-container" style="height: 400px">
+                      <div id="charging-chart"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  
+    // Add event listeners
+    const closeBtn = popup.querySelector('.details-close-btn');
+    closeBtn.addEventListener('click', () => popup.remove());
+  
+    popup.addEventListener('click', (e) => {
+      if (e.target.classList.contains('details-popup-overlay')) {
+        popup.remove();
+      }
+    });
+  
+    // Add popup to body
+    document.body.appendChild(popup);
+  
+    // Initialize chart with updated options
+    const chartOptions = {
+      chart: {
+        height: '100%',
+        width: '100%',
+        type: 'line',
+        background: '#fff',
+        animations: {
+          enabled: true,
+          easing: 'linear',
+        },
+        toolbar: {
+          show: false
+        }
+      },
+      series: [{
+        name: 'Battery Level',
+        data: []
+      }],
+      xaxis: {
+        type: 'datetime',
+        labels: {
+          datetimeFormatter: {
+            year: 'yyyy',
+            month: 'MMM \'yy',
+            day: 'dd MMM',
+            hour: 'HH:mm'
+          }
+        }
+      },
+      yaxis: {
+        min: 0,
+        max: 100,
+        title: {
+          text: 'Battery Level (%)'
+        }
+      },
+      stroke: {
+        curve: 'smooth',
+        width: 2
+      },
+      colors: ['#28a745']
+    };
+  
+    // Initialize chart after popup is in DOM
+    const chart = new ApexCharts(
+      popup.querySelector('#charging-chart'),
+      chartOptions
+    );
+    chart.render();
+  
+    // Store chart instance for updates
+    this.detailsChart = chart;
+  
+    // Load data
+    this.loadStreetlightData(socid);
+  
+    return popup;
+  }
+  
+  async loadStreetlightData(socid) {
+    try {
+      const response = await fetch(`api/endpoints/get_details.php?socid=${socid}`);
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        const readings = Array.isArray(data.data) ? data.data : [data.data];
+        readings.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Update chart data
+        const chartData = readings.map(reading => ({
+          x: new Date(reading.date).getTime(),
+          y: parseFloat(reading.batsoc)
+        }));
+  
+        this.detailsChart.updateSeries([{
+          name: 'Battery Level',
+          data: chartData
+        }]);
+  
+        // Update other details
+        this.updateStreetlightDetails(readings);
+      } else {
+        console.error("API error:", data.message);
+        alert("Error: " + data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching streetlight data:", error);
+      alert("Failed to load streetlight data");
+    }
+  }
+
+  // Add new method updateStreetlightDetails
+  updateStreetlightDetails(readings) {
+    if (!readings || readings.length === 0) return;
+    
+    const latestReading = readings[readings.length - 1];
+    
+    // Update basic info
+    const elements = {
+      'barangay-text': latestReading.socid,
+      'batsoc': latestReading.batsoc,
+      'batv': latestReading.batv,
+      'batc': latestReading.batc,
+      'solv': latestReading.solv, // Changed from pv_voltage to solv
+      'solc': latestReading.solc, // Changed from pv_current to solc
+      'bulbv': latestReading.bulbv,
+      'curv': latestReading.curv
+    };
+  
+    // Safely update elements if they exist
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      }
+    });
+  
+    // Update last update time
+    const lastUpdateElement = document.getElementById('last-update');
+    if (lastUpdateElement) {
+      lastUpdateElement.textContent = new Date(latestReading.date).toLocaleString();
+    }
+  
+    // Update status badge
+    const statusBadge = document.getElementById('status-badge');
+    if (statusBadge) {
+      const isActive = parseFloat(latestReading.batsoc) > 20.0;
+      statusBadge.textContent = isActive ? 'Active' : 'Inactive';
+      statusBadge.className = `badge ${isActive ? 'bg-success' : 'bg-danger'}`;
+    }
   }
 }
