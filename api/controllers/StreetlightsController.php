@@ -118,5 +118,112 @@ class StreetlightController {
             );
         }
     }
+
+    public function getStreetlightDetails($socid) {
+        try {
+            if (!$socid) {
+                throw new Exception('SOCID is required');
+            }
+            
+            $stmt = $this->conn->prepare("
+                SELECT * FROM streetdata1 
+                WHERE SOCID = :socid 
+                AND DATE >= NOW() - INTERVAL 24 HOUR 
+                ORDER BY DATE DESC
+            ");
+            
+            $stmt->bindParam(':socid', $socid, PDO::PARAM_STR);
+            $stmt->execute();
+            
+            $readings = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $readings[] = [
+                    'socid' => $row['SOCID'],
+                    'bulbv' => $row['BULBV'],
+                    'curv' => $row['CURV'],
+                    'solv' => $row['SOLV'],
+                    'solc' => $row['SOLC'],
+                    'batv' => $row['BATV'],
+                    'batc' => $row['BATC'],
+                    'batsoc' => $row['BATSOC'],
+                    'date' => $row['DATE']
+                ];
+            }
+
+            return [
+                'status' => 'success',
+                'data' => $readings
+            ];
+
+        } catch(Exception $e) {
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function getStreetlightCount($pattern) {
+        try {
+            if (!$pattern) {
+                throw new Exception('Pattern is required');
+            }
+
+            // Check if it's municipality level (3 chars) or barangay level (6 chars)
+            $isBarangay = strlen($pattern) === 6;
+            $isMunicipality = strlen($pattern) === 3;
+
+            if (!$isBarangay && !$isMunicipality) {
+                throw new Exception('Invalid pattern length. Must be 3 (municipality) or 6 (barangay) characters');
+            }
+
+            $query = "SELECT DISTINCT SOCID, MAX(DATE) as latest_reading, MAX(BATSOC) as battery_level 
+                     FROM streetdata1 
+                     WHERE SOCID LIKE :pattern 
+                     GROUP BY SOCID";
+
+            $stmt = $this->conn->prepare($query);
+            
+            // For municipality: CAR-% matches all in CAR
+            // For barangay: CAR-GOS% matches all in GOS barangay
+            $searchPattern = $isBarangay ? 
+                            substr($pattern, 0, 3) . '-' . substr($pattern, 3) . '%' : 
+                            $pattern . '-%';
+            
+            $stmt->bindValue(':pattern', $searchPattern, PDO::PARAM_STR);
+            $stmt->execute();
+
+            $streetlights = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Count active/inactive based on battery level
+            $activeCount = 0;
+            $inactiveCount = 0;
+
+            foreach ($streetlights as $light) {
+                if (floatval($light['battery_level']) > 20.0) {
+                    $activeCount++;
+                } else {
+                    $inactiveCount++;
+                }
+            }
+
+            return [
+                'status' => 'success',
+                'data' => [
+                    'total' => count($streetlights),
+                    'active' => $activeCount,
+                    'inactive' => $inactiveCount,
+                    'level' => $isBarangay ? 'barangay' : 'municipality',
+                    'code' => $pattern
+                ]
+            ];
+
+        } catch(Exception $e) {
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ];
+        }
+    }
 }
 ?>
