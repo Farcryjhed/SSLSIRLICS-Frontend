@@ -228,74 +228,59 @@ class StreetlightController {
                 throw new Exception('Pattern is required');
             }
 
-            // Split pattern to check if it's a full pattern or just municipality code
-            $parts = explode('-', $pattern);
-            
-            // Determine search pattern based on input
-            if (count($parts) === 3) {
-                // Full pattern: PROVINCE-MUNICIPALITY-BARANGAY (e.g., ADU-BTU-AM1)
-                $searchPattern = $pattern . '%';
-            } elseif (count($parts) === 2) {
-                // Province and municipality only (e.g., ADU-BTU)
-                $searchPattern = $pattern . '-%';
-            } elseif (strlen($pattern) === 3) {
-                // Just municipality code - search across all provinces
-                $searchPattern = '%-' . $pattern . '-%';
-            } else {
-                throw new Exception('Invalid pattern format. Expected: PROVINCE-MUNICIPALITY[-BARANGAY]');
+            $isBarangay = strlen($pattern) === 6;
+            $isMunicipality = strlen($pattern) === 3;
+
+            if (!$isBarangay && !$isMunicipality) {
+                throw new Exception('Invalid pattern length. Must be 3 (municipality) or 6 (barangay) characters');
             }
 
-            // Modified query to handle pattern matching more effectively
-            $query = "WITH LatestReadings AS (
-                SELECT SOCID, MAX(DATE) as max_date
-                FROM streetdata1 
-                WHERE SOCID LIKE :pattern
-                GROUP BY SOCID
-            )
-            SELECT s.*
-            FROM streetdata1 s
-            INNER JOIN LatestReadings lr ON s.SOCID = lr.SOCID AND s.DATE = lr.max_date
-            WHERE s.SOCID LIKE :pattern";
+            $query = "SELECT DISTINCT SOCID, MAX(DATE) as latest_reading, MAX(BATSOC) as battery_level 
+                     FROM streetdata1 
+                     WHERE SOCID LIKE :pattern 
+                     GROUP BY SOCID";
 
             $stmt = $this->conn->prepare($query);
+            
+            // For municipality: CAR-% matches all in CAR
+            // For barangay: CAR-GOS% matches all in GOS barangay
+            $searchPattern = $isBarangay ? 
+                            substr($pattern, 0, 3) . '-' . substr($pattern, 3) . '%' : 
+                            $pattern . '-%';
+            
             $stmt->bindValue(':pattern', $searchPattern, PDO::PARAM_STR);
             $stmt->execute();
 
-            $total = 0;
-            $active = 0;
-            $inactive = 0;
+            $streetlights = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Count active/inactive based on battery level
+            $activeCount = 0;
+            $inactiveCount = 0;
 
-            // Add debug logging
-            error_log("Search Pattern: " . $searchPattern);
-
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $total++;
-                // Changed from battery_level to BATSOC
-                if (floatval($row['BATSOC']) > 20.0) {
-                    $active++;
+            foreach ($streetlights as $light) {
+                if (floatval($light['battery_level']) > 20.0) {
+                    $activeCount++;
                 } else {
-                    $inactive++;
+                    $inactiveCount++;
                 }
             }
 
-            // Return counts with pattern info
-            return array(
-                "status" => "success",
-                "data" => array(
-                    "total" => $total,
-                    "active" => $active,
-                    "inactive" => $inactive
-                ),
-                "pattern" => $pattern,
-                "search_pattern" => $searchPattern
-            );
+            return [
+                'status' => 'success',
+                'data' => [
+                    'total' => count($streetlights),
+                    'active' => $activeCount,
+                    'inactive' => $inactiveCount,
+                    'level' => $isBarangay ? 'barangay' : 'municipality',
+                    'code' => $pattern
+                ]
+            ];
 
         } catch(Exception $e) {
-            error_log("Error in getStreetlightCount: " . $e->getMessage());
-            return array(
-                "status" => "error",
-                "message" => $e->getMessage()
-            );
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ];
         }
     }
 }
