@@ -1969,8 +1969,8 @@ class StreetlightMap {
         updateIndicator = document.createElement("div");
         updateIndicator.id = "popup-update-indicator";
         updateIndicator.className = "text-center mt-2 mb-3";
-        updateIndicator.innerHTML =
-          '<small class="text-muted">Loading data...</small>';
+        // updateIndicator.innerHTML =
+        //   '<small class="text-muted">Loading data...</small>';
 
         // Insert after the title
         const title = document.getElementById("barangay-text");
@@ -2004,10 +2004,10 @@ class StreetlightMap {
         // Update other details
         this.updateStreetlightDetails(readings);
 
-        // Update indicator text
-        if (updateIndicator) {
-          updateIndicator.innerHTML = `<small class="text-muted">Last refresh: ${new Date().toLocaleTimeString()}</small>`;
-        }
+        // // Update indicator text
+        // if (updateIndicator) {
+        //   updateIndicator.innerHTML = `<small class="text-muted">Last refresh: ${new Date().toLocaleTimeString()}</small>`;
+        // }
 
         // Start auto-update if not already running
         this.setupAutoUpdate(socid);
@@ -2045,12 +2045,12 @@ class StreetlightMap {
         return;
       }
 
-      // Show updating indicator
-      const updateIndicator = document.getElementById("popup-update-indicator");
-      if (updateIndicator) {
-        updateIndicator.innerHTML =
-          '<small class="text-muted"><i class="fas fa-sync fa-spin me-1"></i>Updating...</small>';
-      }
+      // // Show updating indicator
+      // const updateIndicator = document.getElementById("popup-update-indicator");
+      // if (updateIndicator) {
+      //   // updateIndicator.innerHTML =
+      //   //   '<small class="text-muted"><i class="fas fa-sync fa-spin me-1"></i>Updating...</small>';
+      // }
 
       try {
         // Fetch fresh data using StreetlightQueries
@@ -2078,7 +2078,7 @@ class StreetlightMap {
 
           // Update indicator
           if (updateIndicator) {
-            updateIndicator.innerHTML = `<small class="text-muted">Last refresh: ${new Date().toLocaleTimeString()}</small>`;
+            // updateIndicator.innerHTML = `<small class="text-muted">Last refresh: ${new Date().toLocaleTimeString()}</small>`;
           }
         } else {
           console.error("Auto-update error:", result.message);
@@ -2113,39 +2113,77 @@ class StreetlightMap {
 
     const latestReading = readings[readings.length - 1];
 
-    let locationText = latestReading.socid; // Default fallback text
+    // Default to SOCID as fallback
+    let locationText = latestReading.socid;
+    let barangayName = "Unknown Area";
+    let municipalityName = "";
+    let provinceName = "";
+    let found = false;
 
-    // Parse SOCID to get municipality code and barangay code
+    // Parse SOCID to get codes
     if (latestReading.socid && latestReading.socid.includes("-")) {
       const [municipalityCode, fullBarangayId] = latestReading.socid.split("-");
       const barangayPrefix = fullBarangayId.substring(0, 3);
 
-      // Search through coordinates.json to find the location
-      for (const province in this.coordinates) {
+      // console.log(
+      //   `Looking up location for: Municipality code=${municipalityCode}, Barangay prefix=${barangayPrefix}`
+      // );
+
+      // Search through all provinces and municipalities
+      outerLoop: for (const province in this.coordinates) {
         const municipalities = this.coordinates[province].municipalities;
 
         for (const municipality in municipalities) {
+          const muniData = municipalities[municipality];
+
+          // Try both direct match and case-insensitive match for municipality code
           if (
-            municipalities[municipality].municipality_code === municipalityCode
+            muniData.municipality_code === municipalityCode ||
+            muniData.municipality_code.toUpperCase() ===
+              municipalityCode.toUpperCase()
           ) {
             // Found matching municipality
-            const barangays = municipalities[municipality].barangays;
-            let barangayName = "Unknown Area";
+            municipalityName = municipality;
+            provinceName = province;
 
             // Look for matching barangay
+            const barangays = muniData.barangays;
             for (const barangay in barangays) {
-              if (barangays[barangay].barangay_code === barangayPrefix) {
+              // Try both direct match and case-insensitive match for barangay code
+              const currentBarangayCode = barangays[barangay].barangay_code;
+              if (
+                currentBarangayCode === barangayPrefix ||
+                currentBarangayCode.toUpperCase() ===
+                  barangayPrefix.toUpperCase()
+              ) {
                 barangayName = barangay;
-                break;
+                found = true;
+                break outerLoop;
               }
             }
 
-            // Set location text
-            locationText = `${barangayName}, ${municipality}, ${province}`;
-            break;
+            // If we found the municipality but not the barangay
+            if (!found) {
+              console.log(
+                `Municipality ${municipality} found, but no matching barangay for code ${barangayPrefix}`
+              );
+              break outerLoop;
+            }
           }
         }
       }
+
+      // Set location text based on what we found
+      if (found) {
+        locationText = `${barangayName}, ${municipalityName}, ${provinceName}`;
+      } else if (municipalityName) {
+        locationText = `Unknown Area, ${municipalityName}, ${provinceName}`;
+      } else {
+        // If everything fails, use a cleaner version of the SOCID
+        locationText = `SOCID: ${latestReading.socid}`;
+      }
+
+      // console.log(`Location resolved to: ${locationText}`);
     }
 
     // Format numeric values for display (remove trailing zeros)
@@ -2156,12 +2194,12 @@ class StreetlightMap {
 
     // Update UI elements with data
     const elements = {
-      "barangay-text": locationText, // Use location name instead of SOCID
+      "barangay-text": locationText,
       batsoc: formatValue(latestReading.batsoc),
       batv: formatValue(latestReading.batv),
       batc: formatValue(latestReading.batc),
-      solv: formatValue(latestReading.solv || latestReading.pv_voltage),
-      solc: formatValue(latestReading.solc || latestReading.pv_current),
+      solv: formatValue(latestReading.pv_voltage || latestReading.solv),
+      solc: formatValue(latestReading.pv_current || latestReading.solc),
       bulbv: formatValue(latestReading.bulbv),
       curv: formatValue(latestReading.curv),
     };
