@@ -1541,7 +1541,7 @@ class StreetlightMap {
       return;
     }
 
-
+    const filePath = `rsc/geojson/${regionFiles[region]}`;
 
     fetch(filePath)
       .then((response) => {
