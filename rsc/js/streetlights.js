@@ -330,6 +330,13 @@ class StreetlightMap {
         return;
       }
 
+      // Get province code
+      const provinceCode = provinceData.province_code;
+      if (!provinceCode) {
+        console.error("No province code found for:", province);
+        return;
+      }
+
       // Add markers for municipalities that have matching codes
       for (const municipalityName in provinceData.municipalities) {
         const municipalityData = provinceData.municipalities[municipalityName];
@@ -344,9 +351,9 @@ class StreetlightMap {
           continue;
         }
 
-        // Get count statistics from API for this municipality
+        // Get count statistics from API with province code prefix
         const statsResponse = await fetch(
-          `api/endpoints/get_count.php?pattern=${municipalityData.municipality_code}`
+          `api/endpoints/get_count.php?pattern=ADU-${municipalityData.municipality_code}`
         );
         const statsData = await statsResponse.json();
 
@@ -364,12 +371,12 @@ class StreetlightMap {
           }),
         });
 
-        // Modern municipality popup - replace the existing popup content in showMunicipalityMarkers method
-        // Inside your showMunicipalityMarkers method where you create the popupContent
+        // Create popup content with province info
         const popupContent = `
           <div class="modern-popup p-3">
             <div class="popup-header mb-3">
               <h6 class="fw-bold mb-0">${municipalityName}</h6>
+              <small class="text-muted">${province}</small>
             </div>
             
             <div class="stats-grid mb-3">
@@ -390,70 +397,6 @@ class StreetlightMap {
             <button class="btn btn-sm btn-primary w-100 view-details">View Details</button>
           </div>
         `;
-
-        // Add this to your code right before defining the popup content
-        if (!document.getElementById("modern-popup-styles")) {
-          const styleSheet = document.createElement("style");
-          styleSheet.id = "modern-popup-styles";
-          styleSheet.textContent = `
-            .modern-popup {
-              font-family: system-ui, -apple-system, sans-serif;
-            }
-            
-            .modern-popup .popup-header {
-              border-bottom: 1px solid #eee;
-              padding-bottom: 8px;
-            }
-            
-            .modern-popup .stats-grid {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 8px;
-            }
-            
-            .modern-popup .stat-box {
-              padding: 8px 4px;
-              border-radius: 6px;
-              text-align: center;
-              background: #f8f9fa;
-            }
-            
-            .modern-popup .stat-box.active {
-              background: rgba(40, 167, 69, 0.1);
-            }
-            
-            .modern-popup .stat-box.active .stat-value {
-              color: #28a745;
-            }
-            
-            .modern-popup .stat-box.inactive {
-              background: rgba(220, 53, 69, 0.1);
-            }
-            
-            .modern-popup .stat-box.inactive .stat-value {
-              color: #dc3545;
-            }
-            
-            .modern-popup .stat-value {
-              font-weight: bold;
-              font-size: 1.2rem;
-            }
-            
-            .modern-popup .stat-label {
-              font-size: 0.8rem;
-              color: #6c757d;
-            }
-            
-            .modern-popup .view-details {
-              transition: all 0.2s;
-            }
-            
-            .modern-popup .view-details:hover {
-              transform: translateY(-1px);
-            }
-          `;
-          document.head.appendChild(styleSheet);
-        }
 
         marker.bindPopup(popupContent);
         marker.on("popupopen", (e) => {
@@ -478,36 +421,62 @@ class StreetlightMap {
   }
 
   async showBarangayMarkers(province, municipality) {
+    console.log("Starting showBarangayMarkers:", { province, municipality });
+
     this.barangayMarkers.clearLayers();
 
     try {
       // Get barangays from coordinates
       const barangays =
-        this.coordinates[province].municipalities[municipality].barangays;
+        this.coordinates[province]?.municipalities[municipality]?.barangays;
+      if (!barangays) {
+        console.error("No barangays found for:", { province, municipality });
+        console.log("Available coordinates:", this.coordinates);
+        return;
+      }
+      console.log("Found barangays:", Object.keys(barangays));
+
       const municipalityCode =
-        this.coordinates[province].municipalities[municipality]
-          .municipality_code;
+        this.coordinates[province]?.municipalities[municipality]
+          ?.municipality_code;
+      if (!municipalityCode) {
+        console.error("No municipality code found for:", {
+          province,
+          municipality,
+        });
+        return;
+      }
+      console.log("Municipality code:", municipalityCode);
 
       // Add markers for barangays
       for (const barangayName in barangays) {
         const data = barangays[barangayName];
+        console.log("Processing barangay:", { barangayName, data });
 
         // Skip if no valid coordinates or barangay code
         if (!data?.lat || !data?.long || !data?.barangay_code) {
+          console.warn("Invalid barangay data:", { barangayName, data });
           continue;
         }
 
         // Get count statistics from API for this barangay
-        const fullBarangayCode = municipalityCode + data.barangay_code;
-        const statsResponse = await fetch(
-          `api/endpoints/get_count.php?pattern=${fullBarangayCode}`
-        );
+        const statsUrl = `api/endpoints/get_count.php?pattern=ADU-${municipalityCode}-${data.barangay_code}`;
+        console.log("Fetching stats from:", statsUrl);
+
+        const statsResponse = await fetch(statsUrl);
         const statsData = await statsResponse.json();
+        console.log("Stats response:", { barangayName, statsData });
 
         if (statsData.status !== "success" || statsData.data.total === 0) {
+          console.log("Skipping barangay - no streetlights:", barangayName);
           continue;
         }
 
+        console.log("Creating marker for:", {
+          barangayName,
+          lat: data.lat,
+          long: data.long,
+        });
         const marker = L.marker([data.lat, data.long], {
           icon: L.divIcon({
             className: "custom-marker",
@@ -520,7 +489,7 @@ class StreetlightMap {
             municipality: municipality,
             province: province,
             barangayCode: data.barangay_code,
-            fullCode: fullBarangayCode,
+            fullCode: municipalityCode + data.barangay_code,
           },
         });
 
@@ -532,16 +501,25 @@ class StreetlightMap {
         );
 
         marker.bindPopup(popupContent);
-
         this.barangayMarkers.addLayer(marker);
+        console.log("Added marker for:", barangayName);
       }
 
       // Make sure the layer is added to the map
       if (!this.map.hasLayer(this.barangayMarkers)) {
+        console.log("Adding barangay markers layer to map");
         this.barangayMarkers.addTo(this.map);
+      } else {
+        console.log("Barangay markers layer already on map");
       }
+
+      console.log(
+        "Total markers added:",
+        this.barangayMarkers.getLayers().length
+      );
     } catch (error) {
       console.error("Error showing barangay markers:", error);
+      console.error("Stack trace:", error.stack);
     }
   }
 
@@ -1566,16 +1544,30 @@ class StreetlightMap {
   search() {
     const searchInput = document.getElementById("search-input");
     if (!searchInput || !searchInput.value.trim()) {
-      alert("Please enter a municipality or province code to search.");
+      alert(
+        "Please enter a search pattern in the format: MUNICIPALITY (BTU) or MUNICIPALITY-BARANGAY (BTU-APU)"
+      );
       return;
     }
 
-    const pattern = searchInput.value.trim().toUpperCase();
+    let pattern = searchInput.value.trim().toUpperCase();
 
-    // Validate input (should be 3 chars for municipality, 6 chars for barangay)
-    if (pattern.length !== 3 && pattern.length !== 6) {
+    // Handle different input formats
+    if (pattern.includes("-")) {
+      // Pattern has municipality-barangay format (BTU-APU)
+      const [municipality, barangay] = pattern.split("-");
+      pattern = `ADU-${municipality}-${barangay}`;
+    } else if (pattern.length === 3) {
+      // Municipality code only (BTU)
+      pattern = `ADU-${pattern}`;
+    } else if (pattern.length === 6) {
+      // Combined format without separator (BTUAPU)
+      const municipality = pattern.substring(0, 3);
+      const barangay = pattern.substring(3);
+      pattern = `ADU-${municipality}-${barangay}`;
+    } else {
       alert(
-        "Please enter a valid code: 3 characters for municipality or 6 characters for barangay."
+        "Please enter a valid code format:\n- Municipality (BTU)\n- Full code (BTUAPU)\n- With separators (BTU-APU)"
       );
       return;
     }
@@ -1583,11 +1575,15 @@ class StreetlightMap {
     // Show loading indicator
     const resultsContainer = document.getElementById("search-results");
     if (resultsContainer) {
-      resultsContainer.innerHTML =
-        '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+      resultsContainer.innerHTML = `
+        <div class="text-center">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>`;
     }
 
-    // Call the API endpoint
+    // Call the API endpoint with formatted pattern
     fetch(`api/endpoints/get_count.php?pattern=${pattern}`)
       .then((response) => {
         if (!response.ok) {
