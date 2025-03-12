@@ -2441,13 +2441,6 @@
           }
         ]
       },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          126.1974606,
-          9.0799833
-        ]
-      },
       "id": "node/198522530"
     },
     {
@@ -2478,13 +2471,6 @@
               "wikipedia": "en:Surigao del Sur"
             }
           }
-        ]
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          126.15,
-          8.84
         ]
       },
       "id": "node/305704366"

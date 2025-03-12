@@ -551,13 +551,6 @@
           }
         ]
       },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          125.5851827,
-          10.1577932
-        ]
-      },
       "id": "node/2524841962"
     },
     {
@@ -587,13 +580,6 @@
               "wikipedia": "en:Dinagat Islands"
             }
           }
-        ]
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          125.5695546,
-          10.0084315
         ]
       },
       "id": "node/8088360173"

@@ -31,12 +31,112 @@ class StreetlightMap {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
 
+        // Initialize GeoJSON layer group
+        this.geoJsonLayer = L.layerGroup().addTo(this.map);
+        this.geoJsonLayers = {};
+    
+        // Load and display GeoJSON with improved error handling
+        fetch('rsc/geojson/surigaodelsur.geojson')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            this.geoJsonLayer = L.geoJSON(data, {
+              style: {
+                color: '#1671cb',
+                weight: 2,
+                fillOpacity: 0.2,
+                fillColor: '#1671cb'
+              },
+              onEachFeature: (feature, layer) => {
+                // Add hover effect
+                layer.on({
+                  mouseover: (e) => {
+                    const layer = e.target;
+                    layer.setStyle({
+                      weight: 3,
+                      fillOpacity: 0.5,
+                      fillColor: '#2196f3'
+                    });
+                    layer.bringToFront();
+    
+                    // Show tooltip if feature has name
+                    if ( feature.properties.name) {
+                      layer.bindTooltip(feature.properties.name, {
+                        permanent: false,
+                        direction: 'center',
+                        className: 'area-tooltip'
+                      }).openTooltip();
+                    }
+                  },
+                  mouseout: (e) => {
+                    const layer = e.target;
+                    layer.setStyle({
+                      weight: 2,
+                      fillOpacity: 0.2,
+                      fillColor: '#1671cb'
+                    });
+                    layer.closeTooltip();
+                  },
+                  click: (e) => {
+                    // Handle click events
+                    const properties = e.target.feature.properties;
+                    if (properties && properties.name) {
+                      console.log(`Clicked area: ${properties.name}`);
+                      // Handle area click - e.g., zoom to area, show details, etc.
+                      this.handleAreaClick(properties);
+                    }
+                  }
+                });
+              }
+            }).addTo(this.map);
+    
+            // Store reference to GeoJSON layer
+            this.geoJsonLayers['ADS'] = this.geoJsonLayer;
+    
+   /*         // Fit map to GeoJSON bounds
+            if (this.geoJsonLayer.getBounds) {
+              // Fit bounds with padding
+              this.map.fitBounds(this.geoJsonLayer.getBounds(), {
+                padding: [50, 50]
+              });
+            
+              // Set transparent style for the layer
+              this.geoJsonLayer.setStyle({
+                color: 'transparent',
+                weight: 0,
+                fillOpacity: 0,
+                fillColor: 'transparent',
+                opacity: 0
+              });
+            }
+            
+    */
+            console.log('Successfully loaded GeoJSON');
+          })
+          .catch(error => {
+            console.error('Error loading GeoJSON:', error);
+            alert('Failed to load map data. Please refresh the page.');
+          });
+
     // Add zoom control to top right
     L.control
       .zoom({
         position: "topright",
       })
       .addTo(this.map);
+  }
+
+  handleAreaClick(properties) {
+    // Handle area click events
+    if (properties.type === 'municipality') {
+      this.showMunicipalityMarkers(properties.name);
+    } else if (properties.type === 'barangay') {
+      this.showBarangayDetails(properties);
+    }
   }
 
   async loadCoordinates() {
@@ -106,6 +206,8 @@ class StreetlightMap {
       long: count > 0 ? totalLong / count : 124.6319,
     };
   }
+
+  
 
   addProvinceMarkers() {
     const isMobile =
