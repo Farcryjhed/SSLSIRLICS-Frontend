@@ -342,6 +342,5 @@ if (socid) {
       alert("Failed to load streetlight data");
     });
 } else {
-  console.error("No SOCID provided in URL");
-  alert("No streetlight ID provided");
+
 }
