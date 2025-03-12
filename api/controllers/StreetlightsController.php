@@ -125,10 +125,14 @@ class StreetlightController {
                 throw new Exception('SOCID is required');
             }
             
+            // Log the request for debugging
+            error_log("Fetching details for SOCID: " . $socid);
+            
+            // First try with the 24 hour limit
             $stmt = $this->conn->prepare("
                 SELECT * FROM streetdata1 
                 WHERE SOCID = :socid 
-                AND DATE >= NOW() - INTERVAL 24 HOUR 
+                AND DATE >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
                 ORDER BY DATE DESC
             ");
             
@@ -149,13 +153,68 @@ class StreetlightController {
                     'date' => $row['DATE']
                 ];
             }
+            
+            // If no results found in last 24 hours, get the most recent readings instead
+            if (empty($readings)) {
+                error_log("No data found in last 24 hours for SOCID: " . $socid . ". Fetching most recent data instead.");
+                
+                $stmt = $this->conn->prepare("
+                    SELECT * FROM streetdata1 
+                    WHERE SOCID = :socid 
+                    ORDER BY DATE DESC
+                    LIMIT 10
+                ");
+                
+                $stmt->bindParam(':socid', $socid, PDO::PARAM_STR);
+                $stmt->execute();
+                
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $readings[] = [
+                        'socid' => $row['SOCID'],
+                        'bulbv' => $row['BULBV'],
+                        'curv' => $row['CURV'],
+                        'solv' => $row['SOLV'],
+                        'solc' => $row['SOLC'],
+                        'batv' => $row['BATV'],
+                        'batc' => $row['BATC'],
+                        'batsoc' => $row['BATSOC'],
+                        'date' => $row['DATE']
+                    ];
+                }
+                
+                // If still no results, check if the SOCID exists at all
+                if (empty($readings)) {
+                    $stmt = $this->conn->prepare("
+                        SELECT COUNT(*) as count FROM streetdata1 WHERE SOCID = :socid
+                    ");
+                    $stmt->bindParam(':socid', $socid, PDO::PARAM_STR);
+                    $stmt->execute();
+                    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($result['count'] == 0) {
+                        error_log("SOCID not found in database: " . $socid);
+                        return [
+                            'status' => 'error',
+                            'message' => 'Streetlight not found with SOCID: ' . $socid
+                        ];
+                    } else {
+                        error_log("SOCID exists but no readings available: " . $socid);
+                        return [
+                            'status' => 'error',
+                            'message' => 'No readings available for this streetlight'
+                        ];
+                    }
+                }
+            }
 
+            error_log("Found " . count($readings) . " readings for SOCID: " . $socid);
             return [
                 'status' => 'success',
                 'data' => $readings
             ];
 
         } catch(Exception $e) {
+            error_log("Error in getStreetlightDetails: " . $e->getMessage());
             return [
                 'status' => 'error',
                 'message' => $e->getMessage()
@@ -169,7 +228,6 @@ class StreetlightController {
                 throw new Exception('Pattern is required');
             }
 
-            // Check if it's municipality level (3 chars) or barangay level (6 chars)
             $isBarangay = strlen($pattern) === 6;
             $isMunicipality = strlen($pattern) === 3;
 
