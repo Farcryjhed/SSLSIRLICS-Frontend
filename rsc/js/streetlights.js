@@ -55,7 +55,7 @@ class StreetlightMap {
           return response.json();
         })
         .then(data => {
-          // Add custom CSS styles
+          // Add custom CSS styles 
           if (!document.getElementById('geojson-styles')) {
             const style = document.createElement('style');
             style.id = 'geojson-styles';
@@ -86,7 +86,7 @@ class StreetlightMap {
           // Create GeoJSON layer
           this.geoJsonLayers[regionCode] = L.geoJSON(data, {
             style: (feature) => ({
-              color: 'transparent',
+              color: 'transparent', 
               weight: 0,
               fillOpacity: 0,
               fillColor: 'transparent',
@@ -138,7 +138,7 @@ class StreetlightMap {
                   layer.nameTooltip = null;
                 }
               };
-              
+
               layer.on({
                 mouseover: (e) => {
                   if (!isMobile && !layer.isVisible) {
@@ -160,11 +160,13 @@ class StreetlightMap {
                   } else {
                     // Deactivate previous active layer
                     if (this.activeGeoJsonLayer) {
+                      this.activeGeoJsonLayer.isVisible = false;
                       hideLayer.call(this.activeGeoJsonLayer);
                     }
                     
                     // Activate new layer
                     this.activeGeoJsonLayer = layer;
+                    layer.isVisible = true;
                     showLayer();
                   }
                 }
@@ -178,23 +180,8 @@ class StreetlightMap {
           console.error(`Error loading GeoJSON for ${regionCode}:`, error);
         });
     });
-
-    // Add zoom control to top right
-    L.control
-      .zoom({
-        position: "topright",
-      })
-      .addTo(this.map);
   }
 
-  handleAreaClick(properties) {
-    // Handle area click events
-    if (properties.type === 'municipality') {
-      this.showMunicipalityMarkers(properties.name);
-    } else if (properties.type === 'barangay') {
-      this.showBarangayDetails(properties);
-    }
-  }
 
   async loadCoordinates() {
     try {
@@ -618,7 +605,7 @@ class StreetlightMap {
         const popupContent = `
           <div class="modern-popup p-3">
             <div class="popup-header mb-3">
-              <h6 class="fw-bold mb-0">${municipalityName}</h6>
+              <h6 class="fw-bold mb-0 text-center">${municipalityName}</h6>
             </div>
             
             <div class="stats-grid mb-3">
@@ -835,7 +822,7 @@ class StreetlightMap {
     container.innerHTML = `
         <div class="p-3 popup-content">
             <div class="header d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold text-primary mb-0">${province.name}</h5>
+                <h5 class="fw-bold text-primary mb-0 text-center ">${province.name}</h5>
                 ${
                   isMobile
                     ? `
@@ -853,7 +840,7 @@ class StreetlightMap {
                         <i class="fas fa-lightbulb"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-value">${
+                        <div class="stat-value text-center">${
                           province.totalStreetlights || 4
                         }</div>
                         <div class="stat-label">Total Streetlights</div>
@@ -988,7 +975,7 @@ class StreetlightMap {
 
     container.innerHTML = `
         <div class="text-center">
-            <h4 class="fw-bold mb-3">${barangay.name}</h4>
+            <h4 class="fw-bold mb-3 ">${barangay.name}</h4>
             <div class="stats-grid mb-3">
                 <div class="stat-item">
                     <div class="stat-value">${barangay.totalStreetlights}</div>
@@ -1050,7 +1037,7 @@ class StreetlightMap {
       const detailsContainer = L.DomUtil.create("div", "streetlight-details");
       detailsContainer.innerHTML = `
         <div class="p-3" style="max-height: 400px; overflow-y: auto;">
-          <h5 class="fw-bold mb-3">${barangay.name} Streetlights (${
+          <h5 class="fw-bold mb-3 text-center">${barangay.name} Streetlights (${
         uniqueStreetlights.length
       })</h5>
           <div class="streetlight-list">
@@ -1761,7 +1748,7 @@ class StreetlightMap {
 
     container.innerHTML = `
       <div class="popup-header mb-3">
-        <h6 class="fw-bold mb-0">${barangayName}</h6>
+        <h6 class="fw-bold mb-0 text-center">${barangayName}</h6>
         <div class="text-muted small">${municipality}, ${province}</div>
       </div>
       
@@ -1919,9 +1906,9 @@ class StreetlightMap {
   
       .details-close-btn {
         position: absolute;
-        top: 15px;
-        right: 15px;
-        font-size: 24px;
+        top: 13px;
+        right: 32px;
+        font-size: 30px;
         cursor: pointer;
         background: none;
         border: none;
