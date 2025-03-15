@@ -31,113 +31,157 @@ class StreetlightMap {
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
 
-        // Initialize GeoJSON layer group
-        this.geoJsonLayer = L.layerGroup().addTo(this.map);
-        this.geoJsonLayers = {};
-    
-        // Load and display GeoJSON with improved error handling
-        fetch('rsc/geojson/surigaodelsur.geojson')
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            this.geoJsonLayer = L.geoJSON(data, {
-              style: {
-                color: '#1671cb',
-                weight: 2,
-                fillOpacity: 0.2,
-                fillColor: '#1671cb'
-              },
-              onEachFeature: (feature, layer) => {
-                // Add hover effect
-                layer.on({
-                  mouseover: (e) => {
-                    const layer = e.target;
-                    layer.setStyle({
-                      weight: 3,
-                      fillOpacity: 0.5,
-                      fillColor: '#2196f3'
-                    });
-                    layer.bringToFront();
-    
-                    // Show tooltip if feature has name
-                    if ( feature.properties.name) {
-                      layer.bindTooltip(feature.properties.name, {
-                        permanent: false,
-                        direction: 'center',
-                        className: 'area-tooltip'
-                      }).openTooltip();
-                    }
-                  },
-                  mouseout: (e) => {
-                    const layer = e.target;
-                    layer.setStyle({
-                      weight: 2,
-                      fillOpacity: 0.2,
-                      fillColor: '#1671cb'
-                    });
-                    layer.closeTooltip();
-                  },
-                  click: (e) => {
-                    // Handle click events
-                    const properties = e.target.feature.properties;
-                    if (properties && properties.name) {
-                      console.log(`Clicked area: ${properties.name}`);
-                      // Handle area click - e.g., zoom to area, show details, etc.
-                      this.handleAreaClick(properties);
-                    }
-                  }
-                });
+    // Define all GeoJSON files to load
+    const geoJsonFiles = {
+      'ADS': 'agusandelsur.geojson',
+      'ADN': 'agusandelnorte.geojson',
+      'DIN': 'dinagatisland.geojson',
+      'SDN': 'surigaodelnorte.geojson',
+      'SDS': 'surigaodelsur.geojson'
+    };
+
+    // Initialize GeoJSON layer group
+    this.geoJsonLayer = L.layerGroup().addTo(this.map);
+    this.geoJsonLayers = {};
+    this.activeGeoJsonLayer = null; // Track currently active layer
+
+    // Load all GeoJSON files
+    Object.entries(geoJsonFiles).forEach(([regionCode, fileName]) => {
+      fetch(`rsc/geojson/${fileName}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Add custom CSS styles 
+          if (!document.getElementById('geojson-styles')) {
+            const style = document.createElement('style');
+            style.id = 'geojson-styles';
+            style.textContent = `
+              .leaflet-interactive {
+                outline: none !important;
               }
-            }).addTo(this.map);
-    
-            // Store reference to GeoJSON layer
-            this.geoJsonLayers['ADS'] = this.geoJsonLayer;
-    
-   /*         // Fit map to GeoJSON bounds
-            if (this.geoJsonLayer.getBounds) {
-              // Fit bounds with padding
-              this.map.fitBounds(this.geoJsonLayer.getBounds(), {
-                padding: [50, 50]
-              });
-            
-              // Set transparent style for the layer
-              this.geoJsonLayer.setStyle({
-                color: 'transparent',
-                weight: 0,
-                fillOpacity: 0,
-                fillColor: 'transparent',
-                opacity: 0
+              .province-name-tooltip {
+                background: none;
+                border: none;
+                box-shadow: none;
+                color: #000;
+                font-weight: bold;
+                font-size: 16px;
+                text-shadow: 
+                  -1px -1px 0 #fff,
+                  1px -1px 0 #fff,
+                  -1px 1px 0 #fff,
+                  1px 1px 0 #fff;
+                text-align: center;
+                pointer-events: none;
+                transition: opacity 0.3s;
+              }
+            `;
+            document.head.appendChild(style);
+          }
+
+          // Create GeoJSON layer
+          this.geoJsonLayers[regionCode] = L.geoJSON(data, {
+            style: (feature) => ({
+              color: 'transparent', 
+              weight: 0,
+              fillOpacity: 0,
+              fillColor: 'transparent',
+              className: 'geojson-path',
+              smoothFactor: 1.5,
+              interactive: true,
+              bubblingMouseEvents: false
+            }),
+            onEachFeature: (feature, layer) => {
+              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              
+              // Track layer state
+              layer.isVisible = false;
+              layer.nameTooltip = null;
+
+              const showLayer = () => {
+                layer.isVisible = true;
+                layer.setStyle({
+                  color: '#1671cb',
+                  weight: 3,
+                  fillOpacity: 0.5,
+                  fillColor: '#2196f3'
+                });
+                layer.bringToFront();
+
+                if (feature.properties && feature.properties.name && !layer.nameTooltip) {
+                  layer.nameTooltip = L.tooltip({
+                    permanent: true,
+                    direction: 'center',
+                    className: 'province-name-tooltip',
+                    offset: [0, 0]
+                  })
+                  .setContent(feature.properties.name)
+                  .setLatLng(layer.getCenter());
+                  layer.nameTooltip.addTo(this.map);
+                }
+              };
+
+              const hideLayer = () => {
+                layer.isVisible = false;
+                layer.setStyle({
+                  color: 'transparent',
+                  weight: 0,
+                  fillOpacity: 0,
+                  fillColor: 'transparent'
+                });
+                if (layer.nameTooltip) {
+                  layer.nameTooltip.remove();
+                  layer.nameTooltip = null;
+                }
+              };
+
+              layer.on({
+                mouseover: (e) => {
+                  if (!isMobile && !layer.isVisible) {
+                    showLayer();
+                  }
+                },
+                mouseout: (e) => {
+                  if (!isMobile && !this.isMarkerHovered && layer !== this.activeGeoJsonLayer) {
+                    hideLayer();
+                  }
+                },
+                click: (e) => {
+                  const layer = e.target;
+                  
+                  if (layer === this.activeGeoJsonLayer) {
+                    // Deactivate layer
+                    this.activeGeoJsonLayer = null;
+                    hideLayer();
+                  } else {
+                    // Deactivate previous active layer
+                    if (this.activeGeoJsonLayer) {
+                      this.activeGeoJsonLayer.isVisible = false;
+                      hideLayer.call(this.activeGeoJsonLayer);
+                    }
+                    
+                    // Activate new layer
+                    this.activeGeoJsonLayer = layer;
+                    layer.isVisible = true;
+                    showLayer();
+                  }
+                }
               });
             }
-            
-    */
-            console.log('Successfully loaded GeoJSON');
-          })
-          .catch(error => {
-            console.error('Error loading GeoJSON:', error);
-            alert('Failed to load map data. Please refresh the page.');
-          });
+          }).addTo(this.geoJsonLayer);
 
-    // Add zoom control to top right
-    L.control
-      .zoom({
-        position: "topright",
-      })
-      .addTo(this.map);
+          console.log(`Successfully loaded GeoJSON for ${regionCode}`);
+        })
+        .catch(error => {
+          console.error(`Error loading GeoJSON for ${regionCode}:`, error);
+        });
+    });
   }
 
-  handleAreaClick(properties) {
-    // Handle area click events
-    if (properties.type === 'municipality') {
-      this.showMunicipalityMarkers(properties.name);
-    } else if (properties.type === 'barangay') {
-      this.showBarangayDetails(properties);
-    }
-  }
 
   async loadCoordinates() {
     try {
@@ -231,6 +275,7 @@ class StreetlightMap {
             iconSize: [40, 40],
             iconAnchor: [20, 40],
           }),
+          
         });
 
         const popupContent = this.createProvincePopup({
@@ -238,6 +283,93 @@ class StreetlightMap {
           code: data.province_code,
         });
 
+  
+
+        const disableAllGeoJsonInteractions = () => {
+          // Hide all GeoJSON layers and disable interactions
+          Object.values(this.geoJsonLayers).forEach(layer => {
+            // Make layer invisible
+            layer.setStyle({
+              color: 'transparent',
+              weight: 0,
+              fillOpacity: 0,
+              fillColor: 'transparent'
+            });
+        
+            // Remove tooltips and province names
+            layer.eachLayer(sublayer => {
+              // Remove existing tooltips
+              if (sublayer.nameTooltip) {
+                sublayer.nameTooltip.remove();
+                sublayer.nameTooltip = null;
+              }
+        
+              // Remove any bound popups or tooltips
+              if (sublayer.getPopup()) {
+                sublayer.unbindPopup();
+              }
+              if (sublayer.getTooltip()) {
+                sublayer.unbindTooltip();
+              }
+        
+              // Disable all interactions
+              sublayer.off('mouseover');
+              sublayer.off('mouseout');
+              sublayer.off('click');
+              sublayer.options.interactive = false;
+            });
+        
+            // Reset states
+            layer.isVisible = false;
+            layer.eachLayer(sublayer => {
+              sublayer.isVisible = false;
+            });
+          });
+        
+          // Clear active layer reference and hover state
+          this.activeGeoJsonLayer = null;
+          this.isGeoJsonHovered = false;
+        
+          // Make entire GeoJSON layer group non-interactive and remove all tooltips
+          this.geoJsonLayer.eachLayer(layer => {
+            layer.options.interactive = false;
+            // Remove any province name tooltips at the layer group level
+            if (layer.nameTooltip) {
+              layer.nameTooltip.remove();
+              layer.nameTooltip = null;
+            }
+          });
+        
+          // Remove any remaining tooltips from the map
+          const tooltips = document.querySelectorAll('.province-name-tooltip');
+          tooltips.forEach(tooltip => tooltip.remove());
+        };
+        
+        // Update the marker click handlers
+        if (isMobile) {
+          // Mobile handler
+          marker.on("popupopen", (e) => {
+            const zoomButton = e.popup._contentNode.querySelector(".zoom-to-province");
+            if (zoomButton) {
+              zoomButton.addEventListener("click", () => {
+                disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
+                this.provinceMarkers.removeLayer(marker);
+                this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+                this.showMunicipalityMarkers(province);
+                marker.closePopup();
+              });
+            }
+          });
+        } else {
+          // Desktop handler  
+          marker.on("click", () => {
+            disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
+            this.provinceMarkers.removeLayer(marker);
+            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+            this.showMunicipalityMarkers(province);
+          });
+        }
+        
         if (isMobile) {
           // Mobile: Show popup on click and handle zoom button
           const popup = L.popup({
@@ -254,6 +386,7 @@ class StreetlightMap {
               e.popup._contentNode.querySelector(".zoom-to-province");
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
+                disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
                 this.provinceMarkers.removeLayer(marker); // Remove marker immediately
                 this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
                 this.showMunicipalityMarkers(province);
@@ -277,6 +410,7 @@ class StreetlightMap {
           });
 
           marker.on("click", () => {
+            disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
             this.provinceMarkers.removeLayer(marker); // Remove marker immediately
             this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
             this.showMunicipalityMarkers(province);
@@ -471,7 +605,7 @@ class StreetlightMap {
         const popupContent = `
           <div class="modern-popup p-3">
             <div class="popup-header mb-3">
-              <h6 class="fw-bold mb-0">${municipalityName}</h6>
+              <h6 class="fw-bold mb-0 text-center">${municipalityName}</h6>
             </div>
             
             <div class="stats-grid mb-3">
@@ -688,7 +822,7 @@ class StreetlightMap {
     container.innerHTML = `
         <div class="p-3 popup-content">
             <div class="header d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold text-primary mb-0">${province.name}</h5>
+                <h5 class="fw-bold text-primary mb-0 text-center ">${province.name}</h5>
                 ${
                   isMobile
                     ? `
@@ -706,7 +840,7 @@ class StreetlightMap {
                         <i class="fas fa-lightbulb"></i>
                     </div>
                     <div class="stat-info">
-                        <div class="stat-value">${
+                        <div class="stat-value text-center">${
                           province.totalStreetlights || 4
                         }</div>
                         <div class="stat-label">Total Streetlights</div>
@@ -841,7 +975,7 @@ class StreetlightMap {
 
     container.innerHTML = `
         <div class="text-center">
-            <h4 class="fw-bold mb-3">${barangay.name}</h4>
+            <h4 class="fw-bold mb-3 ">${barangay.name}</h4>
             <div class="stats-grid mb-3">
                 <div class="stat-item">
                     <div class="stat-value">${barangay.totalStreetlights}</div>
@@ -903,7 +1037,7 @@ class StreetlightMap {
       const detailsContainer = L.DomUtil.create("div", "streetlight-details");
       detailsContainer.innerHTML = `
         <div class="p-3" style="max-height: 400px; overflow-y: auto;">
-          <h5 class="fw-bold mb-3">${barangay.name} Streetlights (${
+          <h5 class="fw-bold mb-3 text-center">${barangay.name} Streetlights (${
         uniqueStreetlights.length
       })</h5>
           <div class="streetlight-list">
@@ -1614,7 +1748,7 @@ class StreetlightMap {
 
     container.innerHTML = `
       <div class="popup-header mb-3">
-        <h6 class="fw-bold mb-0">${barangayName}</h6>
+        <h6 class="fw-bold mb-0 text-center">${barangayName}</h6>
         <div class="text-muted small">${municipality}, ${province}</div>
       </div>
       
@@ -1772,9 +1906,9 @@ class StreetlightMap {
   
       .details-close-btn {
         position: absolute;
-        top: 15px;
-        right: 15px;
-        font-size: 24px;
+        top: 13px;
+        right: 32px;
+        font-size: 30px;
         cursor: pointer;
         background: none;
         border: none;
