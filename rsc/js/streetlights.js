@@ -148,39 +148,132 @@ class StreetlightMap {
 
               layer.on({
                 mouseover: (e) => {
-                  if (!isMobile && !layer.isVisible) {
-                    showLayer();
+                  if (!isMobile && !layer.isClicked) { // Only show hover if not clicked
+                    layer.setStyle({
+                      color: '#1671cb', // Lighter blue for hover
+                      weight: 2,
+                      fillOpacity: 0.3,
+                      fillColor: '#2196f3'
+                    });
+                    
+                    if (feature.properties && feature.properties.name && !layer.hoverTooltip) {
+                      layer.hoverTooltip = L.tooltip({
+                        permanent: true,
+                        direction: 'center',
+                        className: 'province-name-tooltip hover-tooltip',
+                        offset: [0, 0]
+                      })
+                      .setContent(feature.properties.name)
+                      .setLatLng(layer.getCenter());
+                      layer.hoverTooltip.addTo(this.map);
+                    }
                   }
                 },
+                
                 mouseout: (e) => {
-                  if (
-                    !isMobile &&
-                    !this.isMarkerHovered &&
-                    layer !== this.activeGeoJsonLayer
-                  ) {
-                    hideLayer();
+                  if (!isMobile && !layer.isClicked) { // Only hide if not clicked
+                    layer.setStyle({
+                      color: 'transparent',
+                      weight: 0,
+                      fillOpacity: 0,
+                      fillColor: 'transparent'
+                    });
+                    
+                    if (layer.hoverTooltip) {
+                      layer.hoverTooltip.remove();
+                      layer.hoverTooltip = null;
+                    }
                   }
                 },
+                
                 click: (e) => {
                   const layer = e.target;
-
-                  if (layer === this.activeGeoJsonLayer) {
-                    // Deactivate layer
+                  
+                  if (layer.isClicked) {
+                    // Deactivate clicked state
+                    layer.isClicked = false;
                     this.activeGeoJsonLayer = null;
-                    hideLayer();
-                  } else {
-                    // Deactivate previous active layer
-                    if (this.activeGeoJsonLayer) {
-                      this.activeGeoJsonLayer.isVisible = false;
-                      hideLayer.call(this.activeGeoJsonLayer);
+                    
+                    // Hide layer
+                    layer.setStyle({
+                      color: 'transparent',
+                      weight: 0,
+                      fillOpacity: 0,
+                      fillColor: 'transparent'
+                    });
+                    
+                    // Remove province name tooltip
+                    if (layer.clickTooltip) {
+                      layer.clickTooltip.remove();
+                      layer.clickTooltip = null;
                     }
-
+                    
+                    // Also remove any hover tooltip if it exists
+                    if (layer.hoverTooltip) {
+                      layer.hoverTooltip.remove();
+                      layer.hoverTooltip = null;
+                    }
+                    
+                    // Remove any name tooltip
+                    if (layer.nameTooltip) {
+                      layer.nameTooltip.remove();
+                      layer.nameTooltip = null;
+                    }
+                    
+                  } else {
+                    // Deactivate previous clicked layer
+                    if (this.activeGeoJsonLayer) {
+                      this.activeGeoJsonLayer.isClicked = false;
+                      
+                      // Hide previous layer
+                      this.activeGeoJsonLayer.setStyle({
+                        color: 'transparent',
+                        weight: 0,
+                        fillOpacity: 0,
+                        fillColor: 'transparent'
+                      });
+                      
+                      // Remove all tooltips from previous layer
+                      if (this.activeGeoJsonLayer.clickTooltip) {
+                        this.activeGeoJsonLayer.clickTooltip.remove();
+                        this.activeGeoJsonLayer.clickTooltip = null;
+                      }
+                      if (this.activeGeoJsonLayer.hoverTooltip) {
+                        this.activeGeoJsonLayer.hoverTooltip.remove();
+                        this.activeGeoJsonLayer.hoverTooltip = null;
+                      }
+                      if (this.activeGeoJsonLayer.nameTooltip) {
+                        this.activeGeoJsonLayer.nameTooltip.remove();
+                        this.activeGeoJsonLayer.nameTooltip = null;
+                      }
+                    }
+                    
                     // Activate new layer
+                    layer.isClicked = true;
                     this.activeGeoJsonLayer = layer;
-                    layer.isVisible = true;
-                    showLayer();
+                    
+                    // Show layer
+                    layer.setStyle({
+                      color: '#000000', // Darker blue for clicked state
+                      weight: 3,
+                      fillOpacity: 0.5,
+                      fillColor: '#137dd1'
+                    });
+                    
+                    // Add new tooltip for clicked state
+                    if (feature.properties && feature.properties.name) {
+                      layer.clickTooltip = L.tooltip({
+                        permanent: true,
+                        direction: 'center',
+                        className: 'province-name-tooltip click-tooltip',
+                        offset: [0, 0]
+                      })
+                      .setContent(feature.properties.name)
+                      .setLatLng(layer.getCenter());
+                      layer.clickTooltip.addTo(this.map);
+                    }
                   }
-                },
+                }
               });
             },
           }).addTo(this.geoJsonLayer);
@@ -193,6 +286,7 @@ class StreetlightMap {
     });
   }
 
+  
   async loadCoordinates() {
     try {
       const response = await fetch("rsc/coordinates.json");
