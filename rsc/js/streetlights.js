@@ -1206,117 +1206,42 @@ class StreetlightMap {
   }
 
   showBarangayDetails(barangay) {
-    const existingPopup = document.querySelector(".full-screen-popup");
-    if (existingPopup) {
-      document.body.removeChild(existingPopup);
-    }
+    const container = L.DomUtil.create("div", "barangay-details p-4");
 
-    const container = document.createElement("div");
-    container.className = "full-screen-popup";
+    // Add barangay code to the data
+    const barangayData = {
+      ...barangay,
+      barangayCode:
+        this.coordinates[barangay.province].municipalities[
+          barangay.municipality
+        ].barangays[barangay.name].barangay_code,
+    };
 
     container.innerHTML = `
-        <div class="popup-content p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold">${barangay.name} Details</h4>
-                <button class="btn-close" type="button"></button>
-            </div>
-            <div class="details-container mb-4">
-                <div class="detail-row mb-3">
-                    <strong>Municipality:</strong> ${barangay.municipality}
-                </div>
-                <div class="detail-row mb-3">
-                    <strong>Province:</strong> ${barangay.province}
-                </div>
-                <div class="detail-row mb-3">
-                    <strong>Total Streetlights:</strong> ${barangay.totalStreetlights}
+        <div class="text-center">
+            <h4 class="fw-bold mb-3 ">${barangay.name}</h4>
+            <div class="stats-grid mb-3">
+                <div class="stat-item">
+                    <div class="stat-value">${barangay.totalStreetlights}</div>
+                    <div class="stat-label">Total Streetlights</div>
                 </div>
             </div>
-            <div class="text-center">
-                <button class="btn btn-primary view-streetlights">View Streetlights</button>
-            </div>
+            <button class="btn btn-primary view-details mb-2">More Details</button>
         </div>
     `;
 
-    // Add styles
-    const styleSheet = document.createElement("style");
-    styleSheet.textContent = `
-        .full-screen-popup {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1500;
-        }
-        .popup-content {
-            background: white;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 90%;
-            margin: 2rem;
-        }
-        .detail-row {
-            font-size: 1.1rem;
-        }
-    `;
-    document.head.appendChild(styleSheet);
+    // Add event listener for view details button
+    setTimeout(() => {
+      const viewButton = container.querySelector(".view-details");
+      if (viewButton) {
+        L.DomEvent.on(viewButton, "click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          this.showStreetlightDetails(barangayData, e.target);
+        });
+      }
+    }, 0);
 
-    document.body.appendChild(container);
-
-    // Add event listeners
-    const closeButton = container.querySelector(".btn-close");
-    const viewButton = container.querySelector(".view-streetlights");
-
-    closeButton.addEventListener("click", () => container.remove());
-    container.addEventListener("click", (e) => {
-      if (e.target === container) container.remove();
-    });
-
-    viewButton.addEventListener("click", () => {
-      container.remove();
-      this.showMoreDetailsStreetLightsPopup(barangay);
-    });
-  }
-
-  getStatusBadge(barangay) {
-    const status = barangay.batsoc > 20 ? "Active" : "Low Battery";
-    const color = barangay.batsoc > 20 ? "success" : "warning";
-    return `<span class="badge bg-${color}">${status}</span>`;
-  }
-
-  getRandomOffset(maxOffset) {
-    return {
-      lat: (Math.random() - 0.5) * maxOffset,
-      lng: (Math.random() - 0.5) * maxOffset,
-    };
-  }
-
-  calculateAverageBattery(streetlights) {
-    if (!streetlights.length) return 0;
-    const total = streetlights.reduce(
-      (sum, sl) => sum + parseFloat(sl.batsoc),
-      0
-    );
-    return (total / streetlights.length).toFixed(1);
-  }
-
-  createStreetlightPopup(streetlight) {
-    return `
-      <div class="p-2">
-        <h6 class="fw-bold mb-2">Streetlight ${streetlight.socid}</h6>
-        <div class="mb-1">
-          <strong>Battery:</strong> ${streetlight.batsoc}%
-        </div>
-        <div class="mb-1">
-          <strong>Last Updated:</strong><br>
-          ${new Date(streetlight.date).toLocaleString()}
-        </div>
-      </div>
-    `;
+    return container;
   }
 
   //-----------------------------------More-Details-Pop-Up----------------------------------/
@@ -1475,62 +1400,6 @@ class StreetlightMap {
     return batteryLevel > 20.0;
   }
 
-  showMoreDetailsPopup(streetlight) {
-    // Remove any existing popups to avoid duplication
-    const existingPopup = document.querySelector(".full-screen-popup");
-    if (existingPopup) {
-      document.body.removeChild(existingPopup);
-    }
-
-    // Create the full-screen popup container
-    const popupContainer = document.createElement("div");
-    popupContainer.className =
-      "full-screen-popup d-flex align-items-center justify-content-center position-fixed top-0 start-0 w-100 h-100 bg-white";
-    popupContainer.style.zIndex = "1050"; // Ensure it appears on top
-    popupContainer.style.overflowY = "auto";
-
-    // Add the content inside the popup
-    popupContainer.innerHTML = `
-    <div class="popup-content ;">
-      <h4 class="fw-bold text-center mb-3">${
-        streetlight.name
-      } Street lights</h4>
-      <div class="mb-2"><strong>Streetlight ID:</strong> ${
-        streetlight.code
-      }</div>
-      <div class="mb-2"><strong>Status:</strong> ${this.getStatusBadge(
-        streetlight
-      )}</div>
-      <div class="mb-2"><strong>Battery:</strong> ${streetlight.batsoc}%</div>
-      <div class="mb-2"><strong>Last Updated:</strong> ${new Date(
-        streetlight.date
-      ).toLocaleString()}</div>
-      <div class="mb-2"><strong>Location:</strong> ${streetlight.lat}, ${
-      streetlight.lng
-    }</div>
-      <div class="mb-2"><strong>Installation Date:</strong> ${new Date(
-        streetlight.installationDate
-      ).toLocaleDateString()}</div>
-      <div class="text-center mt-4">
-        <button class="btn btn-secondary close-popup">Close</button>
-      </div>
-    </div>
-  `;
-
-    // Append to body
-    document.body.appendChild(popupContainer);
-
-    // Add event listener for closing the popup
-    setTimeout(() => {
-      const closeButton = popupContainer.querySelector(".close-popup");
-      if (closeButton) {
-        closeButton.addEventListener("click", () => {
-          document.body.removeChild(popupContainer);
-        });
-      }
-    }, 0);
-  }
-
   async updateStatistics() {
     try {
       const data = await StreetlightQueries.getAllData();
@@ -1577,9 +1446,6 @@ class StreetlightMap {
             const pvVoltage = parseFloat(light.pv_voltage);
             const pvCurrent = parseFloat(light.pv_current);
             const isActive = pvVoltage > 12.0 && pvCurrent > 0.1;
-
-            if (!isActive) {
-            }
             return isActive;
           } else {
             // Nighttime criteria
@@ -1656,16 +1522,6 @@ class StreetlightMap {
   }
 
   loadRegionGeoJson(region) {
-    const regionFiles = {
-      BTU: "agusandelnorte.geojson",
-      // Add more region mappings as needed
-    };
-
-    if (!regionFiles[region]) {
-      console.error(`No GeoJSON file mapping for region: ${region}`);
-      return;
-    }
-
     const filePath = `rsc/geojson/${regionFiles[region]}`;
 
     fetch(filePath)
@@ -1702,36 +1558,74 @@ class StreetlightMap {
 
   showBarangayDetails(barangay) {
     const container = document.createElement("div");
-    container.className = "barangay-details p-4";
+    container.className = "full-screen-popup";
+
     container.innerHTML = `
-      <h4 class="text-center mb-4">${barangay.name} Details</h4>
-      <div class="mb-3">
-        <strong>Municipality:</strong> ${barangay.municipality}
-      </div>
-      <div class="mb-3">
-        <strong>Province:</strong> ${barangay.province}
-      </div>
-      <div class="mb-3">
-        <strong>Total Streetlights:</strong> ${barangay.totalStreetlights}
-      </div>
-      <div class="text-center">
-        <button class="btn btn-primary view-streetlights">View Streetlights</button>
-      </div>
+        <div class="popup-content p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold">${barangay.name} Details</h4>
+                <button class="btn-close" type="button"></button>
+            </div>
+            <div class="details-container mb-4">
+                <div class="detail-row mb-3">
+                    <strong>Municipality:</strong> ${barangay.municipality}
+                </div>
+                <div class="detail-row mb-3">
+                    <strong>Province:</strong> ${barangay.province}
+                </div>
+                <div class="detail-row mb-3">
+                    <strong>Total Streetlights:</strong> ${barangay.totalStreetlights}
+                </div>
+            </div>
+            <div class="text-center">
+                <button class="btn btn-primary view-streetlights">View Streetlights</button>
+            </div>
+        </div>
     `;
 
-    // Show in a modal or popup
-    const modal = L.popup()
-      .setLatLng(this.map.getCenter())
-      .setContent(container)
-      .openOn(this.map);
+    // Add styles
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = `
+        .full-screen-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+        }
+        .popup-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            margin: 2rem;
+        }
+        .detail-row {
+            font-size: 1.1rem;
+        }
+    `;
+    document.head.appendChild(styleSheet);
 
-    // Add click handler for view streetlights button
+    document.body.appendChild(container);
+
+    // Add event listeners
+    const closeButton = container.querySelector(".btn-close");
     const viewButton = container.querySelector(".view-streetlights");
-    if (viewButton) {
-      viewButton.addEventListener("click", () => {
-        this.showMoreDetailsStreetLightsPopup(barangay);
-      });
-    }
+
+    closeButton.addEventListener("click", () => container.remove());
+    container.addEventListener("click", (e) => {
+      if (e.target === container) container.remove();
+    });
+
+    viewButton.addEventListener("click", () => {
+      container.remove();
+      this.showMoreDetailsStreetLightsPopup(barangay);
+    });
   }
 
   createBarangayPopupWithStats(barangayName, municipality, province, stats) {
@@ -2272,13 +2166,6 @@ class StreetlightMap {
         return;
       }
 
-      // // Show updating indicator
-      // const updateIndicator = document.getElementById("popup-update-indicator");
-      // if (updateIndicator) {
-      //   // updateIndicator.innerHTML =
-      //   //   '<small class="text-muted"><i class="fas fa-sync fa-spin me-1"></i>Updating...</small>';
-      // }
-
       try {
         // Fetch fresh data using StreetlightQueries
         const result = await StreetlightQueries.getStreetlightDetails(socid);
@@ -2302,26 +2189,13 @@ class StreetlightMap {
 
           // Update other details
           this.updateStreetlightDetails(result.readings);
-
-          // Update indicator
-          if (updateIndicator) {
-            // updateIndicator.innerHTML = `<small class="text-muted">Last refresh: ${new Date().toLocaleTimeString()}</small>`;
-          }
         } else {
           console.error("Auto-update error:", result.message);
-          if (updateIndicator) {
-            updateIndicator.innerHTML =
-              '<small class="text-danger">Update failed</small>';
-          }
         }
       } catch (error) {
         console.error("Auto-update error:", error);
-        if (updateIndicator) {
-          updateIndicator.innerHTML =
-            '<small class="text-danger">Update failed</small>';
-        }
       }
-    }, 10000);
+    }, 10000); // Fetch every 10 seconds
   }
 
   // Add cleanup method to the class
