@@ -22,13 +22,62 @@ class StreetlightMap {
     // Start periodic statistics updates
     this.updateStatistics();
     setInterval(() => this.updateStatistics(), 60000); // Update every minute
+
+    // Manage tile cache periodically
+    this.manageTileCache();
+    setInterval(() => this.manageTileCache(), 3600000); // Clean cache every hour
   }
 
   setupMap() {
-    // Add tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    // Create cache storage
+    const tilesCacheStorage = localforage.createInstance({
+      name: "map-tiles",
+    });
+
+    // Create custom caching layer
+    const cachedTileLayer = L.TileLayer.extend({
+      createTile: function (coords, done) {
+        const tile = document.createElement("img");
+        const tileUrl = this.getTileUrl(coords);
+        const key = `${coords.z}:${coords.x}:${coords.y}`;
+
+        // Try to get tile from cache first
+        tilesCacheStorage.getItem(key).then((cachedTile) => {
+          if (cachedTile) {
+            tile.src = cachedTile;
+            done(null, tile);
+          } else {
+            // If not in cache, load from network and cache
+            fetch(tileUrl)
+              .then((response) => response.blob())
+              .then((blob) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const dataUrl = reader.result;
+                  tilesCacheStorage.setItem(key, dataUrl);
+                  tile.src = dataUrl;
+                  done(null, tile);
+                };
+                reader.readAsDataURL(blob);
+              })
+              .catch((error) => {
+                console.error("Error caching tile:", error);
+                tile.src = tileUrl;
+                done(null, tile);
+              });
+          }
+        });
+
+        return tile;
+      },
+    });
+
+    // Add the cached tile layer
+    new cachedTileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://github.com/AlienWolfX">AlienWolfX</a> & <a href="https://github.com/Farcryjhed">Farcryjhed</a>',
+      maxZoom: 19,
+      crossOrigin: true,
     }).addTo(this.map);
 
     // Define all GeoJSON files to load
@@ -2368,6 +2417,27 @@ class StreetlightMap {
       const isActive = parseFloat(latestReading.batsoc) > 20.0;
       statusBadge.textContent = isActive ? "Active" : "Inactive";
       statusBadge.className = `badge ${isActive ? "bg-success" : "bg-danger"}`;
+    }
+  }
+
+  async manageTileCache() {
+    const tilesCacheStorage = localforage.createInstance({
+      name: "map-tiles",
+    });
+
+    try {
+      const keys = await tilesCacheStorage.keys();
+
+      if (keys.length > 800) {
+        // Remove the oldest tiles (first 200)
+        const tilesToRemove = keys.slice(0, 200);
+        for (const key of tilesToRemove) {
+          await tilesCacheStorage.removeItem(key);
+        }
+        console.log("Cleaned up old tiles from cache");
+      }
+    } catch (error) {
+      console.error("Error managing tile cache:", error);
     }
   }
 }
