@@ -66,15 +66,13 @@
     <script src="rsc/js/streetlights.js"></script>
     <script src="rsc/bootstrap/apexcharts/apexcharts.js"></script>
     <script src="rsc/bootstrap/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="rsc/js/details.js"></script>
     <script>
       let map;
       document.addEventListener("DOMContentLoaded", () => {
         map = new StreetlightMap();
-          setTimeout(() => {
-            map.map.invalidateSize();
-          }, 300);
-        
+        setTimeout(() => {
+          map.map.invalidateSize();
+        }, 300);
       });
     </script>
   </body>

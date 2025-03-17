@@ -874,7 +874,7 @@ class StreetlightMap {
               <i class="fas fa-lightbulb"></i>
             </div>
             <div class="stat-info">
-              <div class="stat-value text-center">${streetlightCount}</div>
+              <div class="stat-value">${streetlightCount}</div>
               <div class="stat-label">Total Streetlights</div>
             </div>
           </div>
@@ -1007,6 +1007,7 @@ class StreetlightMap {
 
       // Group readings by SOCID and keep only the latest reading for each streetlight
       const latestReadings = {};
+      console.log("Found readings for barangay:", barangayReadings);
       barangayReadings.forEach((reading) => {
         if (!reading.socid) return;
 
@@ -1206,7 +1207,7 @@ class StreetlightMap {
   }
 
   showBarangayDetails(barangay) {
-    const container = L.DomUtil.create("div", "barangay-details p-4");
+    const container = L.DomUtil.create("div", "p-3 barangay-popup");
 
     // Add barangay code to the data
     const barangayData = {
@@ -1633,7 +1634,16 @@ class StreetlightMap {
 
     container.innerHTML = `
       <div class="popup-header mb-3">
-        <h6 class="fw-bold mb-0 text-center">${barangayName}</h6>
+        <h6 class="fw-bold mb-0 text-center">
+          ${barangayName}
+          ${
+            stats.socid
+              ? `<div class="streetlight-number">#${stats.socid
+                  .split("-")[1]
+                  .slice(-3)}</div>`
+              : ""
+          }
+        </h6>
         <div class="text-muted small">${municipality}, ${province}</div>
       </div>
       
@@ -1654,6 +1664,20 @@ class StreetlightMap {
       
       <button class="btn btn-sm btn-primary w-100 view-details">View Streetlights</button>
     `;
+
+    // Add styles for the streetlight number
+    if (!document.getElementById("streetlight-number-styles")) {
+      const style = document.createElement("style");
+      style.id = "streetlight-number-styles";
+      style.textContent = `
+        .streetlight-number {
+          font-size: 0.9rem;
+          color: #6c757d;
+          margin-top: 4px;
+        }
+      `;
+      document.head.appendChild(style);
+    }
 
     // Add event listener for view details button
     setTimeout(() => {
@@ -2058,6 +2082,14 @@ class StreetlightMap {
         title: {
           text: "Battery Level (%)",
         },
+        labels: {
+          formatter: (value) => parseFloat(value.toFixed(2)), // Remove trailing zeros
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (value) => `${parseFloat(value.toFixed(2))}%`, // Remove trailing zeros in tooltip
+        },
       },
       stroke: {
         curve: "smooth",
@@ -2225,6 +2257,7 @@ class StreetlightMap {
     if (latestReading.socid && latestReading.socid.includes("-")) {
       const [municipalityCode, fullBarangayId] = latestReading.socid.split("-");
       const barangayPrefix = fullBarangayId.substring(0, 3);
+      const streetlightNumber = fullBarangayId.slice(-3); // Get last 3 digits
 
       // console.log(
       //   `Looking up location for: Municipality code=${municipalityCode}, Barangay prefix=${barangayPrefix}`
@@ -2274,14 +2307,14 @@ class StreetlightMap {
         }
       }
 
-      // Set location text based on what we found
+      // Set location text based on what we found, now including streetlight number
       if (found) {
-        locationText = `${barangayName}, ${municipalityName}, ${provinceName}`;
+        locationText = `#${streetlightNumber} - ${barangayName}, ${municipalityName}, ${provinceName}`;
       } else if (municipalityName) {
-        locationText = `Unknown Area, ${municipalityName}, ${provinceName}`;
+        locationText = `#${streetlightNumber} - Unknown Area, ${municipalityName}, ${provinceName}`;
       } else {
-        // If everything fails, use a cleaner version of the SOCID
-        locationText = `SOCID: ${latestReading.socid}`;
+        // If everything fails, use a cleaner version of the SOCID with streetlight number
+        locationText = `#${streetlightNumber} - SOCID: ${latestReading.socid}`;
       }
 
       // console.log(`Location resolved to: ${locationText}`);
