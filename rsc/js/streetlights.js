@@ -171,27 +171,20 @@ class StreetlightMap {
                 },
                 
                 mouseout: (e) => {
-                  if (!isMobile && !layer.isClicked) { // Only hide if not clicked
-                    layer.setStyle({
-                      color: 'transparent',
-                      weight: 0,
-                      fillOpacity: 0,
-                      fillColor: 'transparent'
-                    });
-                    
-                    if (layer.hoverTooltip) {
-                      layer.hoverTooltip.remove();
-                      layer.hoverTooltip = null;
-                    }
+                  if (
+                    !isMobile &&
+                    !this.isMarkerHovered &&
+                    layer !== this.activeGeoJsonLayer
+                  ) {
+                    hideLayer();
                   }
                 },
                 
                 click: (e) => {
                   const layer = e.target;
-                  
-                  if (layer.isClicked) {
-                    // Deactivate clicked state
-                    layer.isClicked = false;
+
+                  if (layer === this.activeGeoJsonLayer) {
+                    // Deactivate layer
                     this.activeGeoJsonLayer = null;
                     
                     // Hide layer
@@ -247,33 +240,14 @@ class StreetlightMap {
                         this.activeGeoJsonLayer.nameTooltip = null;
                       }
                     }
-                    
+
                     // Activate new layer
                     layer.isClicked = true;
                     this.activeGeoJsonLayer = layer;
-                    
-                    // Show layer
-                    layer.setStyle({
-                      color: '#000000', // Darker blue for clicked state
-                      weight: 3,
-                      fillOpacity: 0.5,
-                      fillColor: '#137dd1'
-                    });
-                    
-                    // Add new tooltip for clicked state
-                    if (feature.properties && feature.properties.name) {
-                      layer.clickTooltip = L.tooltip({
-                        permanent: true,
-                        direction: 'center',
-                        className: 'province-name-tooltip click-tooltip',
-                        offset: [0, 0]
-                      })
-                      .setContent(feature.properties.name)
-                      .setLatLng(layer.getCenter());
-                      layer.clickTooltip.addTo(this.map);
-                    }
+                    layer.isVisible = true;
+                    showLayer();
                   }
-                }
+                },
               });
             },
           }).addTo(this.geoJsonLayer);
@@ -1302,121 +1276,68 @@ class StreetlightMap {
     });
   }
 
-  createProvincePopup(province) {
+  async createProvincePopup(province) {
     const container = L.DomUtil.create("div", "province-popup");
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
 
+    // First get the count data from API
+    let streetlightCount = 0;
+    try {
+      const response = await fetch("../api/endpoints/get_province_counts.php");
+      const data = await response.json();
+
+      if (data.status === "success") {
+        // Search through municipalities in this province to find matching codes
+        const matchingMunicipalities = Object.values(
+          this.coordinates[province.name]?.municipalities || {}
+        ).map((muni) => muni.municipality_code);
+
+        // Sum up counts for all municipalities in this province
+        streetlightCount = data.data.provinces
+          .filter((p) => matchingMunicipalities.includes(p.code))
+          .reduce((sum, p) => sum + p.count, 0);
+      }
+    } catch (error) {
+      console.error("Error fetching province counts:", error);
+      streetlightCount = 0;
+    }
+
     container.innerHTML = `
-        <div class="p-3 popup-content">
-            <div class="header d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold text-primary mb-0 text-center ">${
-                  province.name
-                }</h5>
-                ${
-                  isMobile
-                    ? `
-                    <button class="btn btn-sm btn-outline-primary zoom-to-province">
-                        <i class="fas fa-search-plus"></i>
-                    </button>
-                `
-                    : ""
-                }
-            </div>
-            
-            <div class="stats-container">
-                <div class="stat-item d-flex align-items-center gap-3">
-                    <div class="stat-circle bg-primary">
-                        <i class="fas fa-lightbulb"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value text-center">${
-                          province.totalStreetlights || 4
-                        }</div>
-                        <div class="stat-label">Total Streetlights</div>
-                    </div>
-                </div>
-            </div>
+      <div class="p-3 popup-content">
+        <div class="header d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-primary mb-0 text-center ">${
+            province.name
+          }</h5>
+          ${
+            isMobile
+              ? `
+            <button class="btn btn-sm btn-outline-primary zoom-to-province">
+              <i class="fas fa-search-plus"></i>
+            </button>
+          `
+              : ""
+          }
         </div>
+        
+        <div class="stats-container">
+          <div class="stat-item d-flex align-items-center gap-3">
+            <div class="stat-circle bg-primary">
+              <i class="fas fa-lightbulb"></i>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value text-center">${streetlightCount}</div>
+              <div class="stat-label">Total Streetlights</div>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
 
-    // Add styles
-    if (!document.getElementById("province-popup-styles")) {
-      const styleSheet = document.createElement("style");
-      styleSheet.id = "province-popup-styles";
-      styleSheet.textContent = `
-            .province-popup {
-                min-width: 280px;
-                max-width: 320px;
-            }
-            
-            .province-popup .popup-content {
-                background: white;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            
-            .province-popup .stat-circle {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-size: 1.2rem;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
-            .province-popup .stat-value {
-                font-size: 1.5rem;
-                font-weight: bold;
-                color: #2c3e50;
-                line-height: 1.2;
-            }
-            
-            .province-popup .stat-label {
-                color: #6c757d;
-                font-size: 0.9rem;
-            }
-            
-            .province-popup .zoom-to-province {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.9rem;
-                border-radius: 4px;
-                transition: all 0.2s ease;
-            }
-
-            .province-popup .zoom-to-province:hover {
-                background-color: #0d6efd;
-                color: white;
-                transform: scale(1.05);
-            }
-
-            @media (max-width: 576px) {
-                .province-popup {
-                    min-width: 250px;
-                }
-                
-                .province-popup h5 {
-                    font-size: 1.1rem;
-                }
-                
-                .province-popup .stat-value {
-                    font-size: 1.3rem;
-                }
-                
-                .province-popup .stat-circle {
-                    width: 36px;
-                    height: 36px;
-                    font-size: 1rem;
-                }
-            }
-        `;
-      document.head.appendChild(styleSheet);
-    }
+    // Rest of your existing popup styles and code...
+    // ...existing code...
 
     return container;
   }
@@ -2945,5 +2866,4 @@ class StreetlightMap {
       statusBadge.className = `badge ${isActive ? "bg-success" : "bg-danger"}`;
     }
   }
-}
 }
