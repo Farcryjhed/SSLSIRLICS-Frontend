@@ -28,7 +28,7 @@ class StreetlightMap {
     // Add tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        '&copy; <a href="https://github.com/AlienWolfX">AlienWolfX</a> & <a href="https://github.com/Farcryjhed">Farcryjhed</a>',
     }).addTo(this.map);
 
     // Define all GeoJSON files to load
@@ -1007,7 +1007,7 @@ class StreetlightMap {
 
       // Group readings by SOCID and keep only the latest reading for each streetlight
       const latestReadings = {};
-      console.log("Found readings for barangay:", barangayReadings);
+      // console.log("Found readings for barangay:", barangayReadings);
       barangayReadings.forEach((reading) => {
         if (!reading.socid) return;
 
