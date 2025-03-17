@@ -272,7 +272,7 @@ class StreetlightMap {
     }
   }
 
-  initializeMap() {
+  async initializeMap() {
     // Find center point from coordinates
     const center = this.calculateMapCenter();
 
@@ -299,7 +299,7 @@ class StreetlightMap {
     this.setupRegionControls(); // Add this line to initialize region controls
 
     // Add initial province markers
-    this.addProvinceMarkers();
+    await this.addProvinceMarkers();
   }
 
   calculateMapCenter() {
@@ -328,7 +328,7 @@ class StreetlightMap {
     };
   }
 
-  addProvinceMarkers() {
+  async addProvinceMarkers() {
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
@@ -352,10 +352,12 @@ class StreetlightMap {
           }),
         });
 
-        const popupContent = this.createProvincePopup({
+        const popupContent = await this.createProvincePopup({
           name: province,
           code: data.province_code,
         });
+
+        marker.bindPopup(popupContent);
 
         const disableAllGeoJsonInteractions = () => {
           // Hide all GeoJSON layers and disable interactions
@@ -1277,6 +1279,7 @@ class StreetlightMap {
   }
 
   async createProvincePopup(province) {
+    // Create a DOM element container
     const container = L.DomUtil.create("div", "province-popup");
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -1305,10 +1308,11 @@ class StreetlightMap {
       streetlightCount = 0;
     }
 
-    container.innerHTML = `
+    // Create the inner HTML content
+    const content = `
       <div class="p-3 popup-content">
         <div class="header d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold text-primary mb-0 text-center ">${
+          <h5 class="fw-bold text-primary mb-0 text-center">${
             province.name
           }</h5>
           ${
@@ -1336,8 +1340,40 @@ class StreetlightMap {
       </div>
     `;
 
-    // Rest of your existing popup styles and code...
-    // ...existing code...
+    // Set the innerHTML of the container
+    container.innerHTML = content;
+
+    // Add styles if they don't exist
+    if (!document.getElementById("province-popup-styles")) {
+      const style = document.createElement("style");
+      style.id = "province-popup-styles";
+      style.textContent = `
+        .province-popup {
+          min-width: 200px;
+        }
+        .stat-circle {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+        .stat-info {
+          flex: 1;
+        }
+        .stat-value {
+          font-size: 1.2rem;
+          font-weight: bold;
+        }
+        .stat-label {
+          font-size: 0.8rem;
+          color: #6c757d;
+        }
+      `;
+      document.head.appendChild(style);
+    }
 
     return container;
   }
