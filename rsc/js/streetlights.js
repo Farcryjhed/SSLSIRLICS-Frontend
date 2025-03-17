@@ -148,39 +148,132 @@ class StreetlightMap {
 
               layer.on({
                 mouseover: (e) => {
-                  if (!isMobile && !layer.isVisible) {
-                    showLayer();
+                  if (!isMobile && !layer.isClicked) { // Only show hover if not clicked
+                    layer.setStyle({
+                      color: '#1671cb', // Lighter blue for hover
+                      weight: 2,
+                      fillOpacity: 0.3,
+                      fillColor: '#2196f3'
+                    });
+                    
+                    if (feature.properties && feature.properties.name && !layer.hoverTooltip) {
+                      layer.hoverTooltip = L.tooltip({
+                        permanent: true,
+                        direction: 'center',
+                        className: 'province-name-tooltip hover-tooltip',
+                        offset: [0, 0]
+                      })
+                      .setContent(feature.properties.name)
+                      .setLatLng(layer.getCenter());
+                      layer.hoverTooltip.addTo(this.map);
+                    }
                   }
                 },
+                
                 mouseout: (e) => {
-                  if (
-                    !isMobile &&
-                    !this.isMarkerHovered &&
-                    layer !== this.activeGeoJsonLayer
-                  ) {
-                    hideLayer();
+                  if (!isMobile && !layer.isClicked) { // Only hide if not clicked
+                    layer.setStyle({
+                      color: 'transparent',
+                      weight: 0,
+                      fillOpacity: 0,
+                      fillColor: 'transparent'
+                    });
+                    
+                    if (layer.hoverTooltip) {
+                      layer.hoverTooltip.remove();
+                      layer.hoverTooltip = null;
+                    }
                   }
                 },
+                
                 click: (e) => {
                   const layer = e.target;
-
-                  if (layer === this.activeGeoJsonLayer) {
-                    // Deactivate layer
+                  
+                  if (layer.isClicked) {
+                    // Deactivate clicked state
+                    layer.isClicked = false;
                     this.activeGeoJsonLayer = null;
-                    hideLayer();
-                  } else {
-                    // Deactivate previous active layer
-                    if (this.activeGeoJsonLayer) {
-                      this.activeGeoJsonLayer.isVisible = false;
-                      hideLayer.call(this.activeGeoJsonLayer);
+                    
+                    // Hide layer
+                    layer.setStyle({
+                      color: 'transparent',
+                      weight: 0,
+                      fillOpacity: 0,
+                      fillColor: 'transparent'
+                    });
+                    
+                    // Remove province name tooltip
+                    if (layer.clickTooltip) {
+                      layer.clickTooltip.remove();
+                      layer.clickTooltip = null;
                     }
-
+                    
+                    // Also remove any hover tooltip if it exists
+                    if (layer.hoverTooltip) {
+                      layer.hoverTooltip.remove();
+                      layer.hoverTooltip = null;
+                    }
+                    
+                    // Remove any name tooltip
+                    if (layer.nameTooltip) {
+                      layer.nameTooltip.remove();
+                      layer.nameTooltip = null;
+                    }
+                    
+                  } else {
+                    // Deactivate previous clicked layer
+                    if (this.activeGeoJsonLayer) {
+                      this.activeGeoJsonLayer.isClicked = false;
+                      
+                      // Hide previous layer
+                      this.activeGeoJsonLayer.setStyle({
+                        color: 'transparent',
+                        weight: 0,
+                        fillOpacity: 0,
+                        fillColor: 'transparent'
+                      });
+                      
+                      // Remove all tooltips from previous layer
+                      if (this.activeGeoJsonLayer.clickTooltip) {
+                        this.activeGeoJsonLayer.clickTooltip.remove();
+                        this.activeGeoJsonLayer.clickTooltip = null;
+                      }
+                      if (this.activeGeoJsonLayer.hoverTooltip) {
+                        this.activeGeoJsonLayer.hoverTooltip.remove();
+                        this.activeGeoJsonLayer.hoverTooltip = null;
+                      }
+                      if (this.activeGeoJsonLayer.nameTooltip) {
+                        this.activeGeoJsonLayer.nameTooltip.remove();
+                        this.activeGeoJsonLayer.nameTooltip = null;
+                      }
+                    }
+                    
                     // Activate new layer
+                    layer.isClicked = true;
                     this.activeGeoJsonLayer = layer;
-                    layer.isVisible = true;
-                    showLayer();
+                    
+                    // Show layer
+                    layer.setStyle({
+                      color: '#000000', // Darker blue for clicked state
+                      weight: 3,
+                      fillOpacity: 0.5,
+                      fillColor: '#137dd1'
+                    });
+                    
+                    // Add new tooltip for clicked state
+                    if (feature.properties && feature.properties.name) {
+                      layer.clickTooltip = L.tooltip({
+                        permanent: true,
+                        direction: 'center',
+                        className: 'province-name-tooltip click-tooltip',
+                        offset: [0, 0]
+                      })
+                      .setContent(feature.properties.name)
+                      .setLatLng(layer.getCenter());
+                      layer.clickTooltip.addTo(this.map);
+                    }
                   }
-                },
+                }
               });
             },
           }).addTo(this.geoJsonLayer);
@@ -1047,65 +1140,109 @@ class StreetlightMap {
     this.barangayMarkers.clearLayers();
 
     try {
-      // Get barangays from coordinates
-      const barangays =
-        this.coordinates[province].municipalities[municipality].barangays;
-      const municipalityCode =
-        this.coordinates[province].municipalities[municipality]
-          .municipality_code;
+      const barangays = this.coordinates[province].municipalities[municipality].barangays;
+      const municipalityCode = this.coordinates[province].municipalities[municipality].municipality_code;
+      
+      // Get all streetlight data with coordinates from database
+      const response = await fetch(`api/endpoints/get_coordinates.php?pattern=${municipalityCode}`);
+      const locationData = await response.json();
 
-      // Add markers for barangays
+      if (locationData.status !== "success") {
+        console.error("Failed to fetch location data");
+        return;
+      }
+
+      // Get streetlight statistics
+      const statsResponse = await fetch(`api/endpoints/get_count.php?pattern=${municipalityCode}`);
+      const statsData = await statsResponse.json();
+
+      if (statsData.status !== "success") {
+        console.error("Failed to fetch streetlight data");
+        return;
+      }
+
+      // Add markers for barangays with error handling
       for (const barangayName in barangays) {
         const data = barangays[barangayName];
 
-        // Skip if no valid coordinates or barangay code
-        if (!data?.lat || !data?.long || !data?.barangay_code) {
+        // Skip if no barangay code
+        if (!data?.barangay_code) {
+          console.warn(`Missing barangay code for: ${barangayName}`);
           continue;
         }
 
-        // Get count statistics from API for this barangay
-        const fullBarangayCode = municipalityCode + data.barangay_code;
-        const statsResponse = await fetch(
-          `api/endpoints/get_count.php?pattern=${fullBarangayCode}`
-        );
-        const statsData = await statsResponse.json();
+        try {
+          const fullBarangayCode = municipalityCode + data.barangay_code;
+          
+          // Get coordinates from database
+          const barangayLocation = locationData.data.find(loc => loc.socid.startsWith(fullBarangayCode));
+          
+          // Skip if no coordinates in database
+          if (!barangayLocation?.latitude || !barangayLocation?.longitude) {
+            console.warn(`No coordinates in database for: ${barangayName}`);
+            continue;
+          }
 
-        if (statsData.status !== "success" || statsData.data.total === 0) {
-          continue;
+          // Get statistics
+          const barangayStatsResponse = await fetch(`api/endpoints/get_count.php?pattern=${fullBarangayCode}`);
+          const barangayStats = await barangayStatsResponse.json();
+
+          if (barangayStats.status !== "success") {
+            console.warn(`No stats for barangay: ${barangayName}`);
+            continue;
+          }
+
+          // Create marker using database coordinates
+          const marker = L.marker([barangayLocation.latitude, barangayLocation.longitude], {
+            icon: L.divIcon({
+              className: "custom-marker",
+              html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
+              iconSize: [30, 30],
+              iconAnchor: [15, 30],
+            }),
+            barangayData: {
+              name: barangayName,
+              municipality: municipality,
+              province: province,
+              barangayCode: data.barangay_code,
+              fullCode: fullBarangayCode,
+              coordinates: {
+                lat: barangayLocation.latitude,
+                long: barangayLocation.longitude
+              }
+            }
+          });
+
+          // Create and bind popup
+          const popupContent = this.createBarangayPopupWithStats(
+            barangayName,
+            municipality,
+            province,
+            barangayStats.data
+          );
+          marker.bindPopup(popupContent);
+
+          // Add to layer group
+          this.barangayMarkers.addLayer(marker);
+        } catch (error) {
+          console.error(`Error adding marker for ${barangayName}:`, error);
         }
-
-        const marker = L.marker([data.lat, data.long], {
-          icon: L.divIcon({
-            className: "custom-marker",
-            html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 30],
-          }),
-          barangayData: {
-            name: barangayName,
-            municipality: municipality,
-            province: province,
-            barangayCode: data.barangay_code,
-            fullCode: fullBarangayCode,
-          },
-        });
-
-        const popupContent = this.createBarangayPopupWithStats(
-          barangayName,
-          municipality,
-          province,
-          statsData.data
-        );
-
-        marker.bindPopup(popupContent);
-
-        this.barangayMarkers.addLayer(marker);
       }
 
-      // Make sure the layer is added to the map
+      // Add layer group to map if not already added
       if (!this.map.hasLayer(this.barangayMarkers)) {
         this.barangayMarkers.addTo(this.map);
       }
+
+      // Center map on first valid coordinate from database
+      const firstLocation = locationData.data.find(loc => loc.latitude && loc.longitude);
+      if (firstLocation) {
+        this.map.flyTo(
+          [firstLocation.latitude, firstLocation.longitude],
+          this.zoomLevels.municipality
+        );
+      }
+
     } catch (error) {
       console.error("Error showing barangay markers:", error);
     }
@@ -1134,11 +1271,34 @@ class StreetlightMap {
   }
 
   setupMouseCoordinates() {
-    this.map.on("mousemove", (e) => {
-      const coordinatesText = `Lat: ${e.latlng.lat.toFixed(
-        6
-      )}, Lng: ${e.latlng.lng.toFixed(6)}`;
-      document.getElementById("coordinates").innerText = coordinatesText;
+    // Create coordinates container if it doesn't exist
+    const mapContainer = document.getElementById('map');
+    if (!document.getElementById('coordinates-container')) {
+      const coordinatesContainer = document.createElement('div');
+      coordinatesContainer.id = 'coordinates-container';
+      coordinatesContainer.innerHTML = `
+        <div id="coordinates" class="coordinates-display"></div>
+      `;
+      coordinatesContainer.style.cssText = `
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+      `;
+      mapContainer.appendChild(coordinatesContainer);
+    }
+  
+    // Add mousemove event listener
+    this.map.on('mousemove', (e) => {
+      const coordinates = document.getElementById('coordinates');
+      if (coordinates) {
+        coordinates.innerText = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`;
+      }
     });
   }
 
@@ -2741,25 +2901,6 @@ class StreetlightMap {
         }
       }
 
-      // Set location text based on what we found
-      if (found) {
-        locationText = `${barangayName}, ${municipalityName}, ${provinceName}`;
-      } else if (municipalityName) {
-        locationText = `Unknown Area, ${municipalityName}, ${provinceName}`;
-      } else {
-        // If everything fails, use a cleaner version of the SOCID
-        locationText = `SOCID: ${latestReading.socid}`;
-      }
-
-      // console.log(`Location resolved to: ${locationText}`);
-    }
-
-    // Format numeric values for display (remove trailing zeros)
-    const formatValue = (value) => {
-      if (value === undefined || value === null || isNaN(value)) return "N/A";
-      return parseFloat(parseFloat(value).toFixed(2));
-    };
-
     // Update UI elements with data
     const elements = {
       "barangay-text": locationText,
@@ -2804,4 +2945,5 @@ class StreetlightMap {
       statusBadge.className = `badge ${isActive ? "bg-success" : "bg-danger"}`;
     }
   }
+}
 }
