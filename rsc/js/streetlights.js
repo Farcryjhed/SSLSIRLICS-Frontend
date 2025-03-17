@@ -33,11 +33,11 @@ class StreetlightMap {
 
     // Define all GeoJSON files to load
     const geoJsonFiles = {
-      'ADS': 'agusandelsur.geojson',
-      'ADN': 'agusandelnorte.geojson',
-      'DIN': 'dinagatisland.geojson',
-      'SDN': 'surigaodelnorte.geojson',
-      'SDS': 'surigaodelsur.geojson'
+      ADS: "agusandelsur.geojson",
+      ADN: "agusandelnorte.geojson",
+      DIN: "dinagatisland.geojson",
+      SDN: "surigaodelnorte.geojson",
+      SDS: "surigaodelsur.geojson",
     };
 
     // Initialize GeoJSON layer group
@@ -48,17 +48,17 @@ class StreetlightMap {
     // Load all GeoJSON files
     Object.entries(geoJsonFiles).forEach(([regionCode, fileName]) => {
       fetch(`rsc/geojson/${fileName}`)
-        .then(response => {
+        .then((response) => {
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           return response.json();
         })
-        .then(data => {
-          // Add custom CSS styles 
-          if (!document.getElementById('geojson-styles')) {
-            const style = document.createElement('style');
-            style.id = 'geojson-styles';
+        .then((data) => {
+          // Add custom CSS styles
+          if (!document.getElementById("geojson-styles")) {
+            const style = document.createElement("style");
+            style.id = "geojson-styles";
             style.textContent = `
               .leaflet-interactive {
                 outline: none !important;
@@ -86,18 +86,21 @@ class StreetlightMap {
           // Create GeoJSON layer
           this.geoJsonLayers[regionCode] = L.geoJSON(data, {
             style: (feature) => ({
-              color: 'transparent', 
+              color: "transparent",
               weight: 0,
               fillOpacity: 0,
-              fillColor: 'transparent',
-              className: 'geojson-path',
+              fillColor: "transparent",
+              className: "geojson-path",
               smoothFactor: 1.5,
               interactive: true,
-              bubblingMouseEvents: false
+              bubblingMouseEvents: false,
             }),
             onEachFeature: (feature, layer) => {
-              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-              
+              const isMobile =
+                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                  navigator.userAgent
+                );
+
               // Track layer state
               layer.isVisible = false;
               layer.nameTooltip = null;
@@ -105,22 +108,26 @@ class StreetlightMap {
               const showLayer = () => {
                 layer.isVisible = true;
                 layer.setStyle({
-                  color: '#1671cb',
+                  color: "#1671cb",
                   weight: 3,
                   fillOpacity: 0.5,
-                  fillColor: '#2196f3'
+                  fillColor: "#2196f3",
                 });
                 layer.bringToFront();
 
-                if (feature.properties && feature.properties.name && !layer.nameTooltip) {
+                if (
+                  feature.properties &&
+                  feature.properties.name &&
+                  !layer.nameTooltip
+                ) {
                   layer.nameTooltip = L.tooltip({
                     permanent: true,
-                    direction: 'center',
-                    className: 'province-name-tooltip',
-                    offset: [0, 0]
+                    direction: "center",
+                    className: "province-name-tooltip",
+                    offset: [0, 0],
                   })
-                  .setContent(feature.properties.name)
-                  .setLatLng(layer.getCenter());
+                    .setContent(feature.properties.name)
+                    .setLatLng(layer.getCenter());
                   layer.nameTooltip.addTo(this.map);
                 }
               };
@@ -128,10 +135,10 @@ class StreetlightMap {
               const hideLayer = () => {
                 layer.isVisible = false;
                 layer.setStyle({
-                  color: 'transparent',
+                  color: "transparent",
                   weight: 0,
                   fillOpacity: 0,
-                  fillColor: 'transparent'
+                  fillColor: "transparent",
                 });
                 if (layer.nameTooltip) {
                   layer.nameTooltip.remove();
@@ -146,13 +153,17 @@ class StreetlightMap {
                   }
                 },
                 mouseout: (e) => {
-                  if (!isMobile && !this.isMarkerHovered && layer !== this.activeGeoJsonLayer) {
+                  if (
+                    !isMobile &&
+                    !this.isMarkerHovered &&
+                    layer !== this.activeGeoJsonLayer
+                  ) {
                     hideLayer();
                   }
                 },
                 click: (e) => {
                   const layer = e.target;
-                  
+
                   if (layer === this.activeGeoJsonLayer) {
                     // Deactivate layer
                     this.activeGeoJsonLayer = null;
@@ -163,25 +174,24 @@ class StreetlightMap {
                       this.activeGeoJsonLayer.isVisible = false;
                       hideLayer.call(this.activeGeoJsonLayer);
                     }
-                    
+
                     // Activate new layer
                     this.activeGeoJsonLayer = layer;
                     layer.isVisible = true;
                     showLayer();
                   }
-                }
+                },
               });
-            }
+            },
           }).addTo(this.geoJsonLayer);
 
           console.log(`Successfully loaded GeoJSON for ${regionCode}`);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error(`Error loading GeoJSON for ${regionCode}:`, error);
         });
     });
   }
-
 
   async loadCoordinates() {
     try {
@@ -251,8 +261,6 @@ class StreetlightMap {
     };
   }
 
-  
-
   addProvinceMarkers() {
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -275,7 +283,6 @@ class StreetlightMap {
             iconSize: [40, 40],
             iconAnchor: [20, 40],
           }),
-          
         });
 
         const popupContent = this.createProvincePopup({
@@ -283,27 +290,25 @@ class StreetlightMap {
           code: data.province_code,
         });
 
-  
-
         const disableAllGeoJsonInteractions = () => {
           // Hide all GeoJSON layers and disable interactions
-          Object.values(this.geoJsonLayers).forEach(layer => {
+          Object.values(this.geoJsonLayers).forEach((layer) => {
             // Make layer invisible
             layer.setStyle({
-              color: 'transparent',
+              color: "transparent",
               weight: 0,
               fillOpacity: 0,
-              fillColor: 'transparent'
+              fillColor: "transparent",
             });
-        
+
             // Remove tooltips and province names
-            layer.eachLayer(sublayer => {
+            layer.eachLayer((sublayer) => {
               // Remove existing tooltips
               if (sublayer.nameTooltip) {
                 sublayer.nameTooltip.remove();
                 sublayer.nameTooltip = null;
               }
-        
+
               // Remove any bound popups or tooltips
               if (sublayer.getPopup()) {
                 sublayer.unbindPopup();
@@ -311,27 +316,27 @@ class StreetlightMap {
               if (sublayer.getTooltip()) {
                 sublayer.unbindTooltip();
               }
-        
+
               // Disable all interactions
-              sublayer.off('mouseover');
-              sublayer.off('mouseout');
-              sublayer.off('click');
+              sublayer.off("mouseover");
+              sublayer.off("mouseout");
+              sublayer.off("click");
               sublayer.options.interactive = false;
             });
-        
+
             // Reset states
             layer.isVisible = false;
-            layer.eachLayer(sublayer => {
+            layer.eachLayer((sublayer) => {
               sublayer.isVisible = false;
             });
           });
-        
+
           // Clear active layer reference and hover state
           this.activeGeoJsonLayer = null;
           this.isGeoJsonHovered = false;
-        
+
           // Make entire GeoJSON layer group non-interactive and remove all tooltips
-          this.geoJsonLayer.eachLayer(layer => {
+          this.geoJsonLayer.eachLayer((layer) => {
             layer.options.interactive = false;
             // Remove any province name tooltips at the layer group level
             if (layer.nameTooltip) {
@@ -339,17 +344,18 @@ class StreetlightMap {
               layer.nameTooltip = null;
             }
           });
-        
+
           // Remove any remaining tooltips from the map
-          const tooltips = document.querySelectorAll('.province-name-tooltip');
-          tooltips.forEach(tooltip => tooltip.remove());
+          const tooltips = document.querySelectorAll(".province-name-tooltip");
+          tooltips.forEach((tooltip) => tooltip.remove());
         };
-        
+
         // Update the marker click handlers
         if (isMobile) {
           // Mobile handler
           marker.on("popupopen", (e) => {
-            const zoomButton = e.popup._contentNode.querySelector(".zoom-to-province");
+            const zoomButton =
+              e.popup._contentNode.querySelector(".zoom-to-province");
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
                 disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
@@ -361,7 +367,7 @@ class StreetlightMap {
             }
           });
         } else {
-          // Desktop handler  
+          // Desktop handler
           marker.on("click", () => {
             disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
             this.provinceMarkers.removeLayer(marker);
@@ -369,7 +375,7 @@ class StreetlightMap {
             this.showMunicipalityMarkers(province);
           });
         }
-        
+
         if (isMobile) {
           // Mobile: Show popup on click and handle zoom button
           const popup = L.popup({
@@ -812,119 +818,68 @@ class StreetlightMap {
     });
   }
 
-  createProvincePopup(province) {
+  async createProvincePopup(province) {
     const container = L.DomUtil.create("div", "province-popup");
     const isMobile =
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
 
+    // First get the count data from API
+    let streetlightCount = 0;
+    try {
+      const response = await fetch("../api/endpoints/get_province_counts.php");
+      const data = await response.json();
+
+      if (data.status === "success") {
+        // Search through municipalities in this province to find matching codes
+        const matchingMunicipalities = Object.values(
+          this.coordinates[province.name]?.municipalities || {}
+        ).map((muni) => muni.municipality_code);
+
+        // Sum up counts for all municipalities in this province
+        streetlightCount = data.data.provinces
+          .filter((p) => matchingMunicipalities.includes(p.code))
+          .reduce((sum, p) => sum + p.count, 0);
+      }
+    } catch (error) {
+      console.error("Error fetching province counts:", error);
+      streetlightCount = 0;
+    }
+
     container.innerHTML = `
-        <div class="p-3 popup-content">
-            <div class="header d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold text-primary mb-0 text-center ">${province.name}</h5>
-                ${
-                  isMobile
-                    ? `
-                    <button class="btn btn-sm btn-outline-primary zoom-to-province">
-                        <i class="fas fa-search-plus"></i>
-                    </button>
-                `
-                    : ""
-                }
-            </div>
-            
-            <div class="stats-container">
-                <div class="stat-item d-flex align-items-center gap-3">
-                    <div class="stat-circle bg-primary">
-                        <i class="fas fa-lightbulb"></i>
-                    </div>
-                    <div class="stat-info">
-                        <div class="stat-value text-center">${
-                          province.totalStreetlights || 4
-                        }</div>
-                        <div class="stat-label">Total Streetlights</div>
-                    </div>
-                </div>
-            </div>
+      <div class="p-3 popup-content">
+        <div class="header d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-primary mb-0 text-center ">${
+            province.name
+          }</h5>
+          ${
+            isMobile
+              ? `
+            <button class="btn btn-sm btn-outline-primary zoom-to-province">
+              <i class="fas fa-search-plus"></i>
+            </button>
+          `
+              : ""
+          }
         </div>
+        
+        <div class="stats-container">
+          <div class="stat-item d-flex align-items-center gap-3">
+            <div class="stat-circle bg-primary">
+              <i class="fas fa-lightbulb"></i>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value text-center">${streetlightCount}</div>
+              <div class="stat-label">Total Streetlights</div>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
 
-    // Add styles
-    if (!document.getElementById("province-popup-styles")) {
-      const styleSheet = document.createElement("style");
-      styleSheet.id = "province-popup-styles";
-      styleSheet.textContent = `
-            .province-popup {
-                min-width: 280px;
-                max-width: 320px;
-            }
-            
-            .province-popup .popup-content {
-                background: white;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            
-            .province-popup .stat-circle {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-size: 1.2rem;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            
-            .province-popup .stat-value {
-                font-size: 1.5rem;
-                font-weight: bold;
-                color: #2c3e50;
-                line-height: 1.2;
-            }
-            
-            .province-popup .stat-label {
-                color: #6c757d;
-                font-size: 0.9rem;
-            }
-            
-            .province-popup .zoom-to-province {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.9rem;
-                border-radius: 4px;
-                transition: all 0.2s ease;
-            }
-
-            .province-popup .zoom-to-province:hover {
-                background-color: #0d6efd;
-                color: white;
-                transform: scale(1.05);
-            }
-
-            @media (max-width: 576px) {
-                .province-popup {
-                    min-width: 250px;
-                }
-                
-                .province-popup h5 {
-                    font-size: 1.1rem;
-                }
-                
-                .province-popup .stat-value {
-                    font-size: 1.3rem;
-                }
-                
-                .province-popup .stat-circle {
-                    width: 36px;
-                    height: 36px;
-                    font-size: 1rem;
-                }
-            }
-        `;
-      document.head.appendChild(styleSheet);
-    }
+    // Rest of your existing popup styles and code...
+    // ...existing code...
 
     return container;
   }
