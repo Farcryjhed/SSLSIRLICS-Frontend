@@ -185,7 +185,7 @@ class StreetlightMap {
             },
           }).addTo(this.geoJsonLayer);
 
-          console.log(`Successfully loaded GeoJSON for ${regionCode}`);
+          // console.log(`Successfully loaded GeoJSON for ${regionCode}`);
         })
         .catch((error) => {
           console.error(`Error loading GeoJSON for ${regionCode}:`, error);
@@ -564,7 +564,7 @@ class StreetlightMap {
   // Update showMunicipalityMarkers to filter by municipality code
   async showMunicipalityMarkers(province) {
     this.municipalityMarkers.clearLayers();
-    console.log("Showing municipality markers for province:", province);
+    // console.log("Showing municipality markers for province:", province);
 
     try {
       // Get municipality data from coordinates
