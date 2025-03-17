@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streetlight Details</title>
+    <link rel="stylesheet" href="rsc/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="rsc/bootstrap/css/bootstrap.min.css" />
+    <script src="rsc/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .full-screen-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            z-index: 1050;
+        }
+        .popup-content {
+            background: white;
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding-top: 45px; /* Add more top padding to accommodate the close icon */
+            padding-bottom: 5px; /* Remove extra bottom padding */
+        }
+
+        .number-square {
+            width: 37px;
+            height: 37px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #000;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #1671cb;
+            color: white;
+        }
+
+        .number-container {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Adjust space between the square and the icon */
+        }
+
+        .icon-outside {
+            font-size: 40px; /* Adjust size as needed */
+            color: white; /* White icon */
+            -webkit-text-stroke: 2px black; /* Black border around the icon */
+        }
+
+        .close-button {
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            padding: 15px;
+            background: white;
+            text-align: center;
+
+        }
+
+        .close-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 5px;
+            transition: color 0.3s ease;
+        }
+
+        .close-icon:hover {
+            color: #bb2d3b;
+        }
+    </style>
+</head>
+<body>
+    <div class="full-screen-popup justify-content-center" id="popup">
+        <div class="popup-content">
+            <button class="close-icon btn-secondary" onclick="closePopup()">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            <h4 class="fw-bold text-center mb-4">Streetlight Name</h4>
+            <div class="number-container mb-3">
+                <div class="number-square">
+                    <i class="fa-solid fa-1"></i>
+                </div>
+                <span class="ms-2"><strong>Status:</strong></span>
+                <span><i class="fa-solid fa-lightbulb icon-outside 
+                    "></i></span> <!-- Additional icon outside -->
+                <span class="ms-2"><strong class="me-1">Battery:</strong>Active</span>
+                <button class="btn btn-sm btn-secondary mt-2 viewmoredetails">View More Details</button>
+            </div>
+            <div class="number-container mb-3">
+                <div class="number-square">
+                    <i class="fa-solid fa-2"></i>
+                </div>
+                <span><strong>Status:</strong><i class="fa-solid fa-lightbulb icon-outside 
+                    "></i></span> <!-- Additional icon outside -->
+                <span><strong>Volt Rate:</strong> 451 volt</span>
+                <button class="btn btn-sm btn-secondary mt-2 viewmoredetails">View More Details</button>
+            </div>
+            <div class="number-container mb-3">
+                <div class="number-square">
+                    <i class="fa-solid fa-3"></i>
+                </div>
+                <span><strong>Status:</strong><i class="fa-solid fa-lightbulb icon-outside ms-2
+                    "></i></span> <!-- Additional icon outside -->
+                <span><strong>Volt Rate:</strong> 451 volt</span>
+                <button class="btn btn-sm btn-secondary mt-2 viewmoredetails">View More Details</button>
+            </div>
+            <div class="number-container mb-3">
+                <div class="number-square">
+                    <i class="fa-solid fa-4"></i>
+                </div>
+                <span><strong>Status:</strong><i class="fa-solid fa-lightbulb icon-outside ms-2
+                    "></i></span> <!-- Additional icon outside -->
+                <span><strong>Volt Rate:</strong> 451 volt</span>
+                <button class="btn btn-sm btn-secondary mt-2 viewmoredetails">View More Details</button>
+            </div>
+            <div class="number-container mb-3">
+                <div class="number-square">
+                    <i class="fa-solid fa-5"></i>
+                </div>
+                <span><strong>Status:</strong><i class="fa-solid fa-lightbulb icon-outside ms-2
+                    "></i></span> <!-- Additional icon outside -->
+                <span><strong>Volt Rate:</strong> 451 volt</span>
+                <button class="btn btn-sm btn-secondary mt-2 viewmoredetails">View More Details</button>
+            </div>
+            <div class="number-container mb-3">
+                <div class="number-square">
+                    <i class="fa-solid fa-6"></i>
+                </div>
+                <span><strong>Status:</strong><i class="fa-solid fa-lightbulb icon-outside ms-2
+                    "></i></span> <!-- Additional icon outside -->
+                <span><strong>Volt Rate:</strong> 451 volt</span>
+                <button class="btn btn-sm btn-secondary mt-2 viewmoredetails">View More Details</button>
+            </div>
+            <div class="number-container mb-3">
+                <div class="number-square">
+                    <i class="fa-solid fa-7"></i>
+                </div>
+                <span><strong>Status:</strong><i class="fa-solid fa-lightbulb icon-outside ms-2
+                    "></i></span> <!-- Additional icon outside -->
+                <span><strong>Volt Rate:</strong> 451 volt</span>
+                <button class="btn btn-sm btn-secondary mt-2 viewmoredetails">View More Details</button>
+            </div>
+
+            <div class="close-button">
+                <button class="btn btn-danger" onclick="closePopup()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function closePopup() {
+            document.getElementById("popup").remove();
+        }
+    </script>
+</body>
+</html>

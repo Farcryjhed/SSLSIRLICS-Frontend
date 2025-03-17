@@ -153,26 +153,19 @@ class StreetlightMap {
                   }
                 },
                 mouseout: (e) => {
-                  if (!isMobile && !layer.isClicked) { // Only hide if not clicked
-                    layer.setStyle({
-                      color: 'transparent',
-                      weight: 0,
-                      fillOpacity: 0,
-                      fillColor: 'transparent'
-                    });
-                    
-                    if (layer.hoverTooltip) {
-                      layer.hoverTooltip.remove();
-                      layer.hoverTooltip = null;
-                    }
+                  if (
+                    !isMobile &&
+                    !this.isMarkerHovered &&
+                    layer !== this.activeGeoJsonLayer
+                  ) {
+                    hideLayer();
                   }
                 },
                 click: (e) => {
                   const layer = e.target;
-                  
-                  if (layer.isClicked) {
-                    // Deactivate clicked state
-                    layer.isClicked = false;
+
+                  if (layer === this.activeGeoJsonLayer) {
+                    // Deactivate layer
                     this.activeGeoJsonLayer = null;
                     hideLayer();
                   } else {
@@ -181,32 +174,13 @@ class StreetlightMap {
                       this.activeGeoJsonLayer.isVisible = false;
                       hideLayer.call(this.activeGeoJsonLayer);
                     }
-                    
+
                     // Activate new layer
                     this.activeGeoJsonLayer = layer;
-                    
-                    // Show layer
-                    layer.setStyle({
-                      color: '#000000', // Darker blue for clicked state
-                      weight: 3,
-                      fillOpacity: 0.5,
-                      fillColor: '#137dd1'
-                    });
-                    
-                    // Add new tooltip for clicked state
-                    if (feature.properties && feature.properties.name) {
-                      layer.clickTooltip = L.tooltip({
-                        permanent: true,
-                        direction: 'center',
-                        className: 'province-name-tooltip click-tooltip',
-                        offset: [0, 0]
-                      })
-                      .setContent(feature.properties.name)
-                      .setLatLng(layer.getCenter());
-                      layer.clickTooltip.addTo(this.map);
-                    }
+                    layer.isVisible = true;
+                    showLayer();
                   }
-                }
+                },
               });
             },
           }).addTo(this.geoJsonLayer);
