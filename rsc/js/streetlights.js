@@ -359,10 +359,47 @@ class StreetlightMap {
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
                 disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
+                
+                // Store marker data before removing
+                marker.originalPosition = {
+                  lat: data.lat,
+                  long: data.long,
+                  province: province
+                };
+                
+                // Remove marker from current layer but keep reference
                 this.provinceMarkers.removeLayer(marker);
+                
+                // Store marker in a Set for tracking
+                if (!this.hiddenMarkers) {
+                  this.hiddenMarkers = new Set();
+                }
+                this.hiddenMarkers.add(marker);
+                
+                // Fly to location
                 this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
                 this.showMunicipalityMarkers(province);
                 marker.closePopup();
+            
+                // Add zoom end handler if not already added
+                if (!this.markerZoomHandler) {
+                  this.markerZoomHandler = () => {
+                    const currentZoom = this.map.getZoom();
+                    
+                    // Show markers when zoomed out enough
+                    if (currentZoom < 9) {
+                      this.hiddenMarkers?.forEach(hiddenMarker => {
+                        if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
+                          this.provinceMarkers.addLayer(hiddenMarker);
+                        }
+                      });
+                      // Clear hidden markers set after restoring
+                      this.hiddenMarkers.clear();
+                    }
+                  };
+                  
+                  this.map.on('zoomend', this.markerZoomHandler);
+                }
               });
             }
           });
@@ -370,9 +407,47 @@ class StreetlightMap {
           // Desktop handler
           marker.on("click", () => {
             disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
+            
+            // Store marker data before removing
+            marker.originalPosition = {
+              lat: data.lat,
+              long: data.long,
+              province: province
+            };
+            
+            // Remove marker from current layer but keep reference
             this.provinceMarkers.removeLayer(marker);
+            
+            // Store marker in a Set for tracking
+            if (!this.hiddenMarkers) {
+              this.hiddenMarkers = new Set();
+            }
+            this.hiddenMarkers.add(marker);
+            
+            // Fly to location
             this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
             this.showMunicipalityMarkers(province);
+            marker.closePopup();
+        
+            // Add zoom end handler if not already added
+            if (!this.markerZoomHandler) {
+              this.markerZoomHandler = () => {
+                const currentZoom = this.map.getZoom();
+                
+                // Show markers when zoomed out enough
+                if (currentZoom < 9) {
+                  this.hiddenMarkers?.forEach(hiddenMarker => {
+                    if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
+                      this.provinceMarkers.addLayer(hiddenMarker);
+                    }
+                  });
+                  // Clear hidden markers set after restoring
+                  this.hiddenMarkers.clear();
+                }
+              };
+              
+              this.map.on('zoomend', this.markerZoomHandler);
+            }
           });
         }
 
@@ -393,10 +468,47 @@ class StreetlightMap {
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
                 disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
-                this.provinceMarkers.removeLayer(marker); // Remove marker immediately
+                
+                // Store marker data before removing
+                marker.originalPosition = {
+                  lat: data.lat,
+                  long: data.long,
+                  province: province
+                };
+                
+                // Remove marker from current layer but keep reference
+                this.provinceMarkers.removeLayer(marker);
+                
+                // Store marker in a Set for tracking
+                if (!this.hiddenMarkers) {
+                  this.hiddenMarkers = new Set();
+                }
+                this.hiddenMarkers.add(marker);
+                
+                // Fly to location
                 this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
                 this.showMunicipalityMarkers(province);
                 marker.closePopup();
+            
+                // Add zoom end handler if not already added
+                if (!this.markerZoomHandler) {
+                  this.markerZoomHandler = () => {
+                    const currentZoom = this.map.getZoom();
+                    
+                    // Show markers when zoomed out enough
+                    if (currentZoom < 9) {
+                      this.hiddenMarkers?.forEach(hiddenMarker => {
+                        if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
+                          this.provinceMarkers.addLayer(hiddenMarker);
+                        }
+                      });
+                      // Clear hidden markers set after restoring
+                      this.hiddenMarkers.clear();
+                    }
+                  };
+                  
+                  this.map.on('zoomend', this.markerZoomHandler);
+                }
               });
             }
           });
@@ -417,9 +529,221 @@ class StreetlightMap {
 
           marker.on("click", () => {
             disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
-            this.provinceMarkers.removeLayer(marker); // Remove marker immediately
+            
+            // Store marker data before removing
+            marker.originalPosition = {
+              lat: data.lat,
+              long: data.long,
+              province: province
+            };
+            
+            // Remove marker from current layer but keep reference
+            this.provinceMarkers.removeLayer(marker);
+            
+            // Store marker in a Set for tracking
+            if (!this.hiddenMarkers) {
+              this.hiddenMarkers = new Set();
+            }
+            this.hiddenMarkers.add(marker);
+            
+            // Fly to location
             this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
             this.showMunicipalityMarkers(province);
+            marker.closePopup();
+        
+            // Add zoom end handler if not already added
+            if (!this.markerZoomHandler) {
+              this.markerZoomHandler = () => {
+                const currentZoom = this.map.getZoom();
+                
+                // Show markers when zoomed out enough
+                if (currentZoom < 9) {
+                  this.hiddenMarkers?.forEach(hiddenMarker => {
+                    if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
+                      this.provinceMarkers.addLayer(hiddenMarker);
+                    }
+                  });
+                  // Clear hidden markers set after restoring
+                  this.hiddenMarkers.clear();
+                }
+              };
+              
+              this.map.on('zoomend', this.markerZoomHandler);
+            }
+          });
+
+          marker.bindPopup(popup);
+        }
+
+        if (isMobile) {
+          // Mobile: Show popup on click and handle zoom button
+          const popup = L.popup({
+            closeButton: true,
+            autoClose: false,
+            closeOnClick: false,
+            offset: [0, -20],
+          }).setContent(popupContent);
+
+          marker.bindPopup(popup);
+
+          marker.on("popupopen", (e) => {
+            const zoomButton =
+              e.popup._contentNode.querySelector(".zoom-to-province");
+            if (zoomButton) {
+              zoomButton.addEventListener("click", () => {
+                disableAllGeoJsonInteractions();
+                
+                // Store all current province markers before removing
+                if (!this.hiddenMarkers) {
+                  this.hiddenMarkers = new Set();
+                }
+                
+                // Store clicked marker data
+                marker.originalPosition = {
+                  lat: data.lat,
+                  long: data.long,
+                  province: province
+                };
+                
+                // Store all province markers
+                this.provinceMarkers.eachLayer(provinceMarker => {
+                  if (provinceMarker !== marker) {
+                    provinceMarker.originalPosition = {
+                      lat: provinceMarker.getLatLng().lat,
+                      lng: provinceMarker.getLatLng().lng
+                    };
+                    this.provinceMarkers.removeLayer(provinceMarker);
+                    this.hiddenMarkers.add(provinceMarker);
+                  }
+                });
+                
+                // Remove clicked marker last
+                this.provinceMarkers.removeLayer(marker);
+                this.hiddenMarkers.add(marker);
+                
+                // Fly to location
+                this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+                this.showMunicipalityMarkers(province);
+                marker.closePopup();
+            
+                // Add zoom end handler if not already added
+                if (!this.markerZoomHandler) {
+                  this.markerZoomHandler = () => {
+                    const currentZoom = this.map.getZoom();
+                    
+                    // Show all markers when zoomed out enough
+                    if (currentZoom < 9) {
+                      // Add all markers back simultaneously
+                      const markersToAdd = Array.from(this.hiddenMarkers);
+                      
+                      // Create temporary layer group for batch addition
+                      const tempGroup = L.layerGroup();
+                      
+                      markersToAdd.forEach(hiddenMarker => {
+                        if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
+                          tempGroup.addLayer(hiddenMarker);
+                        }
+                      });
+                      
+                      // Add all markers at once
+                      this.provinceMarkers.addLayer(tempGroup);
+                      
+                      // Clear hidden markers set after restoring
+                      this.hiddenMarkers.clear();
+                      
+                      // Remove temporary group
+                      tempGroup.clearLayers();
+                    }
+                  };
+                  
+                  this.map.on('zoomend', this.markerZoomHandler);
+                }
+              });
+            }
+          });
+        } else {
+          // Desktop: Show popup on hover
+          const popup = L.popup({
+            closeButton: false,
+            offset: [0, -20],
+          }).setContent(popupContent);
+
+          marker.on("mouseover", () => {
+            marker.openPopup();
+          });
+
+          marker.on("mouseout", () => {
+            marker.closePopup();
+          });
+
+          marker.on("click", () => {
+            disableAllGeoJsonInteractions();
+            
+            // Store all current province markers before removing
+            if (!this.hiddenMarkers) {
+              this.hiddenMarkers = new Set();
+            }
+            
+            // Store clicked marker data
+            marker.originalPosition = {
+              lat: data.lat,
+              long: data.long,
+              province: province
+            };
+            
+            // Store all province markers
+            this.provinceMarkers.eachLayer(provinceMarker => {
+              if (provinceMarker !== marker) {
+                provinceMarker.originalPosition = {
+                  lat: provinceMarker.getLatLng().lat,
+                  lng: provinceMarker.getLatLng().lng
+                };
+                this.provinceMarkers.removeLayer(provinceMarker);
+                this.hiddenMarkers.add(provinceMarker);
+              }
+            });
+            
+            // Remove clicked marker last
+            this.provinceMarkers.removeLayer(marker);
+            this.hiddenMarkers.add(marker);
+            
+            // Fly to location
+            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+            this.showMunicipalityMarkers(province);
+            marker.closePopup();
+        
+            // Add zoom end handler if not already added
+            if (!this.markerZoomHandler) {
+              this.markerZoomHandler = () => {
+                const currentZoom = this.map.getZoom();
+                
+                // Show all markers when zoomed out enough
+                if (currentZoom < 9) {
+                  // Add all markers back simultaneously
+                  const markersToAdd = Array.from(this.hiddenMarkers);
+                  
+                  // Create temporary layer group for batch addition
+                  const tempGroup = L.layerGroup();
+                  
+                  markersToAdd.forEach(hiddenMarker => {
+                    if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
+                      tempGroup.addLayer(hiddenMarker);
+                    }
+                  });
+                  
+                  // Add all markers at once
+                  this.provinceMarkers.addLayer(tempGroup);
+                  
+                  // Clear hidden markers set after restoring
+                  this.hiddenMarkers.clear();
+                  
+                  // Remove temporary group
+                  tempGroup.clearLayers();
+                }
+              };
+              
+              this.map.on('zoomend', this.markerZoomHandler);
+            }
           });
 
           marker.bindPopup(popup);
