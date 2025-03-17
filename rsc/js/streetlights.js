@@ -28,7 +28,7 @@ class StreetlightMap {
     // Add tile layer
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
-        '&copy; <a href="https://github.com/AlienWolfX">AlienWolfX</a> & <a href="https://github.com/Farcryjhed">Farcryjhed</a> ',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(this.map);
 
     // Define all GeoJSON files to load
@@ -148,28 +148,10 @@ class StreetlightMap {
 
               layer.on({
                 mouseover: (e) => {
-                  if (!isMobile && !layer.isClicked) { // Only show hover if not clicked
-                    layer.setStyle({
-                      color: '#1671cb', // Lighter blue for hover
-                      weight: 2,
-                      fillOpacity: 0.3,
-                      fillColor: '#2196f3'
-                    });
-                    
-                    if (feature.properties && feature.properties.name && !layer.hoverTooltip) {
-                      layer.hoverTooltip = L.tooltip({
-                        permanent: true,
-                        direction: 'center',
-                        className: 'province-name-tooltip hover-tooltip',
-                        offset: [0, 0]
-                      })
-                      .setContent(feature.properties.name)
-                      .setLatLng(layer.getCenter());
-                      layer.hoverTooltip.addTo(this.map);
-                    }
+                  if (!isMobile && !layer.isVisible) {
+                    showLayer();
                   }
                 },
-                
                 mouseout: (e) => {
                   if (
                     !isMobile &&
@@ -179,70 +161,21 @@ class StreetlightMap {
                     hideLayer();
                   }
                 },
-                
                 click: (e) => {
                   const layer = e.target;
 
                   if (layer === this.activeGeoJsonLayer) {
                     // Deactivate layer
                     this.activeGeoJsonLayer = null;
-                    
-                    // Hide layer
-                    layer.setStyle({
-                      color: 'transparent',
-                      weight: 0,
-                      fillOpacity: 0,
-                      fillColor: 'transparent'
-                    });
-                    
-                    // Remove province name tooltip
-                    if (layer.clickTooltip) {
-                      layer.clickTooltip.remove();
-                      layer.clickTooltip = null;
-                    }
-                    
-                    // Also remove any hover tooltip if it exists
-                    if (layer.hoverTooltip) {
-                      layer.hoverTooltip.remove();
-                      layer.hoverTooltip = null;
-                    }
-                    
-                    // Remove any name tooltip
-                    if (layer.nameTooltip) {
-                      layer.nameTooltip.remove();
-                      layer.nameTooltip = null;
-                    }
-                    
+                    hideLayer();
                   } else {
-                    // Deactivate previous clicked layer
+                    // Deactivate previous active layer
                     if (this.activeGeoJsonLayer) {
-                      this.activeGeoJsonLayer.isClicked = false;
-                      
-                      // Hide previous layer
-                      this.activeGeoJsonLayer.setStyle({
-                        color: 'transparent',
-                        weight: 0,
-                        fillOpacity: 0,
-                        fillColor: 'transparent'
-                      });
-                      
-                      // Remove all tooltips from previous layer
-                      if (this.activeGeoJsonLayer.clickTooltip) {
-                        this.activeGeoJsonLayer.clickTooltip.remove();
-                        this.activeGeoJsonLayer.clickTooltip = null;
-                      }
-                      if (this.activeGeoJsonLayer.hoverTooltip) {
-                        this.activeGeoJsonLayer.hoverTooltip.remove();
-                        this.activeGeoJsonLayer.hoverTooltip = null;
-                      }
-                      if (this.activeGeoJsonLayer.nameTooltip) {
-                        this.activeGeoJsonLayer.nameTooltip.remove();
-                        this.activeGeoJsonLayer.nameTooltip = null;
-                      }
+                      this.activeGeoJsonLayer.isVisible = false;
+                      hideLayer.call(this.activeGeoJsonLayer);
                     }
 
                     // Activate new layer
-                    layer.isClicked = true;
                     this.activeGeoJsonLayer = layer;
                     layer.isVisible = true;
                     showLayer();
@@ -426,47 +359,10 @@ class StreetlightMap {
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
                 disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
-                
-                // Store marker data before removing
-                marker.originalPosition = {
-                  lat: data.lat,
-                  long: data.long,
-                  province: province
-                };
-                
-                // Remove marker from current layer but keep reference
                 this.provinceMarkers.removeLayer(marker);
-                
-                // Store marker in a Set for tracking
-                if (!this.hiddenMarkers) {
-                  this.hiddenMarkers = new Set();
-                }
-                this.hiddenMarkers.add(marker);
-                
-                // Fly to location
                 this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
                 this.showMunicipalityMarkers(province);
                 marker.closePopup();
-            
-                // Add zoom end handler if not already added
-                if (!this.markerZoomHandler) {
-                  this.markerZoomHandler = () => {
-                    const currentZoom = this.map.getZoom();
-                    
-                    // Show markers when zoomed out enough
-                    if (currentZoom < 9) {
-                      this.hiddenMarkers?.forEach(hiddenMarker => {
-                        if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
-                          this.provinceMarkers.addLayer(hiddenMarker);
-                        }
-                      });
-                      // Clear hidden markers set after restoring
-                      this.hiddenMarkers.clear();
-                    }
-                  };
-                  
-                  this.map.on('zoomend', this.markerZoomHandler);
-                }
               });
             }
           });
@@ -474,47 +370,9 @@ class StreetlightMap {
           // Desktop handler
           marker.on("click", () => {
             disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
-            
-            // Store marker data before removing
-            marker.originalPosition = {
-              lat: data.lat,
-              long: data.long,
-              province: province
-            };
-            
-            // Remove marker from current layer but keep reference
             this.provinceMarkers.removeLayer(marker);
-            
-            // Store marker in a Set for tracking
-            if (!this.hiddenMarkers) {
-              this.hiddenMarkers = new Set();
-            }
-            this.hiddenMarkers.add(marker);
-            
-            // Fly to location
             this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
             this.showMunicipalityMarkers(province);
-            marker.closePopup();
-        
-            // Add zoom end handler if not already added
-            if (!this.markerZoomHandler) {
-              this.markerZoomHandler = () => {
-                const currentZoom = this.map.getZoom();
-                
-                // Show markers when zoomed out enough
-                if (currentZoom < 9) {
-                  this.hiddenMarkers?.forEach(hiddenMarker => {
-                    if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
-                      this.provinceMarkers.addLayer(hiddenMarker);
-                    }
-                  });
-                  // Clear hidden markers set after restoring
-                  this.hiddenMarkers.clear();
-                }
-              };
-              
-              this.map.on('zoomend', this.markerZoomHandler);
-            }
           });
         }
 
@@ -535,47 +393,10 @@ class StreetlightMap {
             if (zoomButton) {
               zoomButton.addEventListener("click", () => {
                 disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
-                
-                // Store marker data before removing
-                marker.originalPosition = {
-                  lat: data.lat,
-                  long: data.long,
-                  province: province
-                };
-                
-                // Remove marker from current layer but keep reference
-                this.provinceMarkers.removeLayer(marker);
-                
-                // Store marker in a Set for tracking
-                if (!this.hiddenMarkers) {
-                  this.hiddenMarkers = new Set();
-                }
-                this.hiddenMarkers.add(marker);
-                
-                // Fly to location
+                this.provinceMarkers.removeLayer(marker); // Remove marker immediately
                 this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
                 this.showMunicipalityMarkers(province);
                 marker.closePopup();
-            
-                // Add zoom end handler if not already added
-                if (!this.markerZoomHandler) {
-                  this.markerZoomHandler = () => {
-                    const currentZoom = this.map.getZoom();
-                    
-                    // Show markers when zoomed out enough
-                    if (currentZoom < 9) {
-                      this.hiddenMarkers?.forEach(hiddenMarker => {
-                        if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
-                          this.provinceMarkers.addLayer(hiddenMarker);
-                        }
-                      });
-                      // Clear hidden markers set after restoring
-                      this.hiddenMarkers.clear();
-                    }
-                  };
-                  
-                  this.map.on('zoomend', this.markerZoomHandler);
-                }
               });
             }
           });
@@ -596,221 +417,9 @@ class StreetlightMap {
 
           marker.on("click", () => {
             disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
-            
-            // Store marker data before removing
-            marker.originalPosition = {
-              lat: data.lat,
-              long: data.long,
-              province: province
-            };
-            
-            // Remove marker from current layer but keep reference
-            this.provinceMarkers.removeLayer(marker);
-            
-            // Store marker in a Set for tracking
-            if (!this.hiddenMarkers) {
-              this.hiddenMarkers = new Set();
-            }
-            this.hiddenMarkers.add(marker);
-            
-            // Fly to location
+            this.provinceMarkers.removeLayer(marker); // Remove marker immediately
             this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
             this.showMunicipalityMarkers(province);
-            marker.closePopup();
-        
-            // Add zoom end handler if not already added
-            if (!this.markerZoomHandler) {
-              this.markerZoomHandler = () => {
-                const currentZoom = this.map.getZoom();
-                
-                // Show markers when zoomed out enough
-                if (currentZoom < 9) {
-                  this.hiddenMarkers?.forEach(hiddenMarker => {
-                    if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
-                      this.provinceMarkers.addLayer(hiddenMarker);
-                    }
-                  });
-                  // Clear hidden markers set after restoring
-                  this.hiddenMarkers.clear();
-                }
-              };
-              
-              this.map.on('zoomend', this.markerZoomHandler);
-            }
-          });
-
-          marker.bindPopup(popup);
-        }
-
-        if (isMobile) {
-          // Mobile: Show popup on click and handle zoom button
-          const popup = L.popup({
-            closeButton: true,
-            autoClose: false,
-            closeOnClick: false,
-            offset: [0, -20],
-          }).setContent(popupContent);
-
-          marker.bindPopup(popup);
-
-          marker.on("popupopen", (e) => {
-            const zoomButton =
-              e.popup._contentNode.querySelector(".zoom-to-province");
-            if (zoomButton) {
-              zoomButton.addEventListener("click", () => {
-                disableAllGeoJsonInteractions();
-                
-                // Store all current province markers before removing
-                if (!this.hiddenMarkers) {
-                  this.hiddenMarkers = new Set();
-                }
-                
-                // Store clicked marker data
-                marker.originalPosition = {
-                  lat: data.lat,
-                  long: data.long,
-                  province: province
-                };
-                
-                // Store all province markers
-                this.provinceMarkers.eachLayer(provinceMarker => {
-                  if (provinceMarker !== marker) {
-                    provinceMarker.originalPosition = {
-                      lat: provinceMarker.getLatLng().lat,
-                      lng: provinceMarker.getLatLng().lng
-                    };
-                    this.provinceMarkers.removeLayer(provinceMarker);
-                    this.hiddenMarkers.add(provinceMarker);
-                  }
-                });
-                
-                // Remove clicked marker last
-                this.provinceMarkers.removeLayer(marker);
-                this.hiddenMarkers.add(marker);
-                
-                // Fly to location
-                this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-                this.showMunicipalityMarkers(province);
-                marker.closePopup();
-            
-                // Add zoom end handler if not already added
-                if (!this.markerZoomHandler) {
-                  this.markerZoomHandler = () => {
-                    const currentZoom = this.map.getZoom();
-                    
-                    // Show all markers when zoomed out enough
-                    if (currentZoom < 9) {
-                      // Add all markers back simultaneously
-                      const markersToAdd = Array.from(this.hiddenMarkers);
-                      
-                      // Create temporary layer group for batch addition
-                      const tempGroup = L.layerGroup();
-                      
-                      markersToAdd.forEach(hiddenMarker => {
-                        if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
-                          tempGroup.addLayer(hiddenMarker);
-                        }
-                      });
-                      
-                      // Add all markers at once
-                      this.provinceMarkers.addLayer(tempGroup);
-                      
-                      // Clear hidden markers set after restoring
-                      this.hiddenMarkers.clear();
-                      
-                      // Remove temporary group
-                      tempGroup.clearLayers();
-                    }
-                  };
-                  
-                  this.map.on('zoomend', this.markerZoomHandler);
-                }
-              });
-            }
-          });
-        } else {
-          // Desktop: Show popup on hover
-          const popup = L.popup({
-            closeButton: false,
-            offset: [0, -20],
-          }).setContent(popupContent);
-
-          marker.on("mouseover", () => {
-            marker.openPopup();
-          });
-
-          marker.on("mouseout", () => {
-            marker.closePopup();
-          });
-
-          marker.on("click", () => {
-            disableAllGeoJsonInteractions();
-            
-            // Store all current province markers before removing
-            if (!this.hiddenMarkers) {
-              this.hiddenMarkers = new Set();
-            }
-            
-            // Store clicked marker data
-            marker.originalPosition = {
-              lat: data.lat,
-              long: data.long,
-              province: province
-            };
-            
-            // Store all province markers
-            this.provinceMarkers.eachLayer(provinceMarker => {
-              if (provinceMarker !== marker) {
-                provinceMarker.originalPosition = {
-                  lat: provinceMarker.getLatLng().lat,
-                  lng: provinceMarker.getLatLng().lng
-                };
-                this.provinceMarkers.removeLayer(provinceMarker);
-                this.hiddenMarkers.add(provinceMarker);
-              }
-            });
-            
-            // Remove clicked marker last
-            this.provinceMarkers.removeLayer(marker);
-            this.hiddenMarkers.add(marker);
-            
-            // Fly to location
-            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-            this.showMunicipalityMarkers(province);
-            marker.closePopup();
-        
-            // Add zoom end handler if not already added
-            if (!this.markerZoomHandler) {
-              this.markerZoomHandler = () => {
-                const currentZoom = this.map.getZoom();
-                
-                // Show all markers when zoomed out enough
-                if (currentZoom < 9) {
-                  // Add all markers back simultaneously
-                  const markersToAdd = Array.from(this.hiddenMarkers);
-                  
-                  // Create temporary layer group for batch addition
-                  const tempGroup = L.layerGroup();
-                  
-                  markersToAdd.forEach(hiddenMarker => {
-                    if (!this.provinceMarkers.hasLayer(hiddenMarker)) {
-                      tempGroup.addLayer(hiddenMarker);
-                    }
-                  });
-                  
-                  // Add all markers at once
-                  this.provinceMarkers.addLayer(tempGroup);
-                  
-                  // Clear hidden markers set after restoring
-                  this.hiddenMarkers.clear();
-                  
-                  // Remove temporary group
-                  tempGroup.clearLayers();
-                }
-              };
-              
-              this.map.on('zoomend', this.markerZoomHandler);
-            }
           });
 
           marker.bindPopup(popup);
@@ -1114,109 +723,65 @@ class StreetlightMap {
     this.barangayMarkers.clearLayers();
 
     try {
-      const barangays = this.coordinates[province].municipalities[municipality].barangays;
-      const municipalityCode = this.coordinates[province].municipalities[municipality].municipality_code;
-      
-      // Get all streetlight data with coordinates from database
-      const response = await fetch(`api/endpoints/get_coordinates.php?pattern=${municipalityCode}`);
-      const locationData = await response.json();
+      // Get barangays from coordinates
+      const barangays =
+        this.coordinates[province].municipalities[municipality].barangays;
+      const municipalityCode =
+        this.coordinates[province].municipalities[municipality]
+          .municipality_code;
 
-      if (locationData.status !== "success") {
-        console.error("Failed to fetch location data");
-        return;
-      }
-
-      // Get streetlight statistics
-      const statsResponse = await fetch(`api/endpoints/get_count.php?pattern=${municipalityCode}`);
-      const statsData = await statsResponse.json();
-
-      if (statsData.status !== "success") {
-        console.error("Failed to fetch streetlight data");
-        return;
-      }
-
-      // Add markers for barangays with error handling
+      // Add markers for barangays
       for (const barangayName in barangays) {
         const data = barangays[barangayName];
 
-        // Skip if no barangay code
-        if (!data?.barangay_code) {
-          console.warn(`Missing barangay code for: ${barangayName}`);
+        // Skip if no valid coordinates or barangay code
+        if (!data?.lat || !data?.long || !data?.barangay_code) {
           continue;
         }
 
-        try {
-          const fullBarangayCode = municipalityCode + data.barangay_code;
-          
-          // Get coordinates from database
-          const barangayLocation = locationData.data.find(loc => loc.socid.startsWith(fullBarangayCode));
-          
-          // Skip if no coordinates in database
-          if (!barangayLocation?.latitude || !barangayLocation?.longitude) {
-            console.warn(`No coordinates in database for: ${barangayName}`);
-            continue;
-          }
+        // Get count statistics from API for this barangay
+        const fullBarangayCode = municipalityCode + data.barangay_code;
+        const statsResponse = await fetch(
+          `api/endpoints/get_count.php?pattern=${fullBarangayCode}`
+        );
+        const statsData = await statsResponse.json();
 
-          // Get statistics
-          const barangayStatsResponse = await fetch(`api/endpoints/get_count.php?pattern=${fullBarangayCode}`);
-          const barangayStats = await barangayStatsResponse.json();
-
-          if (barangayStats.status !== "success") {
-            console.warn(`No stats for barangay: ${barangayName}`);
-            continue;
-          }
-
-          // Create marker using database coordinates
-          const marker = L.marker([barangayLocation.latitude, barangayLocation.longitude], {
-            icon: L.divIcon({
-              className: "custom-marker",
-              html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
-              iconSize: [30, 30],
-              iconAnchor: [15, 30],
-            }),
-            barangayData: {
-              name: barangayName,
-              municipality: municipality,
-              province: province,
-              barangayCode: data.barangay_code,
-              fullCode: fullBarangayCode,
-              coordinates: {
-                lat: barangayLocation.latitude,
-                long: barangayLocation.longitude
-              }
-            }
-          });
-
-          // Create and bind popup
-          const popupContent = this.createBarangayPopupWithStats(
-            barangayName,
-            municipality,
-            province,
-            barangayStats.data
-          );
-          marker.bindPopup(popupContent);
-
-          // Add to layer group
-          this.barangayMarkers.addLayer(marker);
-        } catch (error) {
-          console.error(`Error adding marker for ${barangayName}:`, error);
+        if (statsData.status !== "success" || statsData.data.total === 0) {
+          continue;
         }
+
+        const marker = L.marker([data.lat, data.long], {
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: '<i class="fas fa-map-marker-alt text-danger fa-2x"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+          }),
+          barangayData: {
+            name: barangayName,
+            municipality: municipality,
+            province: province,
+            barangayCode: data.barangay_code,
+            fullCode: fullBarangayCode,
+          },
+        });
+
+        const popupContent = this.createBarangayPopupWithStats(
+          barangayName,
+          municipality,
+          province,
+          statsData.data
+        );
+
+        marker.bindPopup(popupContent);
+
+        this.barangayMarkers.addLayer(marker);
       }
 
-      // Add layer group to map if not already added
+      // Make sure the layer is added to the map
       if (!this.map.hasLayer(this.barangayMarkers)) {
         this.barangayMarkers.addTo(this.map);
       }
-
-      // Center map on first valid coordinate from database
-      const firstLocation = locationData.data.find(loc => loc.latitude && loc.longitude);
-      if (firstLocation) {
-        this.map.flyTo(
-          [firstLocation.latitude, firstLocation.longitude],
-          this.zoomLevels.municipality
-        );
-      }
-
     } catch (error) {
       console.error("Error showing barangay markers:", error);
     }
@@ -1245,34 +810,11 @@ class StreetlightMap {
   }
 
   setupMouseCoordinates() {
-    // Create coordinates container if it doesn't exist
-    const mapContainer = document.getElementById('map');
-    if (!document.getElementById('coordinates-container')) {
-      const coordinatesContainer = document.createElement('div');
-      coordinatesContainer.id = 'coordinates-container';
-      coordinatesContainer.innerHTML = `
-        <div id="coordinates" class="coordinates-display"></div>
-      `;
-      coordinatesContainer.style.cssText = `
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        z-index: 1000;
-        background: rgba(255, 255, 255, 0.8);
-        padding: 5px 10px;
-        border-radius: 4px;
-        font-size: 12px;
-        pointer-events: none;
-      `;
-      mapContainer.appendChild(coordinatesContainer);
-    }
-  
-    // Add mousemove event listener
-    this.map.on('mousemove', (e) => {
-      const coordinates = document.getElementById('coordinates');
-      if (coordinates) {
-        coordinates.innerText = `Lat: ${e.latlng.lat.toFixed(6)}, Lng: ${e.latlng.lng.toFixed(6)}`;
-      }
+    this.map.on("mousemove", (e) => {
+      const coordinatesText = `Lat: ${e.latlng.lat.toFixed(
+        6
+      )}, Lng: ${e.latlng.lng.toFixed(6)}`;
+      document.getElementById("coordinates").innerText = coordinatesText;
     });
   }
 
@@ -2822,6 +2364,25 @@ class StreetlightMap {
         }
       }
 
+      // Set location text based on what we found
+      if (found) {
+        locationText = `${barangayName}, ${municipalityName}, ${provinceName}`;
+      } else if (municipalityName) {
+        locationText = `Unknown Area, ${municipalityName}, ${provinceName}`;
+      } else {
+        // If everything fails, use a cleaner version of the SOCID
+        locationText = `SOCID: ${latestReading.socid}`;
+      }
+
+      // console.log(`Location resolved to: ${locationText}`);
+    }
+
+    // Format numeric values for display (remove trailing zeros)
+    const formatValue = (value) => {
+      if (value === undefined || value === null || isNaN(value)) return "N/A";
+      return parseFloat(parseFloat(value).toFixed(2));
+    };
+
     // Update UI elements with data
     const elements = {
       "barangay-text": locationText,
@@ -2866,5 +2427,4 @@ class StreetlightMap {
       statusBadge.className = `badge ${isActive ? "bg-success" : "bg-danger"}`;
     }
   }
-}
 }
