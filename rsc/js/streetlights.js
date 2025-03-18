@@ -1977,6 +1977,58 @@ class StreetlightMap {
         height: 100% !important;
       }
     `;
+    styleSheet.textContent += `
+      .battery-status-main {
+        position: relative;
+      }
+    
+      .battery-icon-animated {
+        transition: all 0.3s ease;
+        position: relative;
+      }
+    
+      .battery-icon-animated::after {
+        position: absolute;
+        right: -12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        animation: pulseOpacity 1s infinite;
+      }
+    
+      .battery-critical {
+        color: #dc3545;
+      }
+    
+      .battery-low {
+        color: #ffc107;
+      }
+    
+      .battery-medium {
+        color: #17a2b8;
+      }
+    
+      .battery-high {
+        color: #28a745;
+      }
+    
+      .battery-charging::after {
+        content: "\\f0e7"; /* Lightning bolt */
+        color: #28a745;
+      }
+    
+      .battery-discharging::after {
+        content: "\\f063"; /* Arrow down */
+        color: #dc3545;
+      }
+    
+      @keyframes pulseOpacity {
+        0% { opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { opacity: 0.4; }
+      }
+    `;
     document.head.appendChild(styleSheet);
 
     // Create popup HTML
@@ -2090,9 +2142,7 @@ class StreetlightMap {
                     <div class="col-md-4">
                       <div
                         class="battery-status-main p-4 rounded bg-light h-100">
-                        <i
-                          class="fas fa-battery-three-quarters battery-icon"
-                          style="font-size: 3rem"></i>
+                        <i id="battery-icon" class="fas fa-battery-empty battery-icon-animated" style="font-size: 3rem"></i>
                         <div class="display-4 mt-2">
                           <span id="batsoc">-</span>%
                         </div>
@@ -2338,6 +2388,12 @@ class StreetlightMap {
 
           // Update other details
           this.updateStreetlightDetails(result.readings);
+
+          // Update battery animation
+          const latestReading = result.readings[result.readings.length - 1];
+          const batteryLevel = parseFloat(latestReading.batsoc);
+          const batteryCurrent = parseFloat(latestReading.batc);
+          this.updateBatteryIcon(batteryLevel, batteryCurrent);
         } else {
           console.error("Auto-update error:", result.message);
         }
@@ -2486,6 +2542,11 @@ class StreetlightMap {
       statusBadge.textContent = isActive ? "Active" : "Inactive";
       statusBadge.className = `badge ${isActive ? "bg-success" : "bg-danger"}`;
     }
+
+    // Update battery icon animation
+    const batteryLevel = parseFloat(latestReading.batsoc);
+    const batteryCurrent = parseFloat(latestReading.batc);
+    this.updateBatteryIcon(batteryLevel, batteryCurrent);
   }
 
   async manageTileCache() {
@@ -2507,5 +2568,44 @@ class StreetlightMap {
     } catch (error) {
       console.error("Error managing tile cache:", error);
     }
+  }
+
+  updateBatteryIcon(batteryLevel, batteryCurrent) {
+    const iconElement = document.getElementById("battery-icon");
+    if (!iconElement) return;
+
+    // Remove existing classes
+    iconElement.className = "fas battery-icon-animated";
+
+    // Add battery level icon and color class
+    let batteryIcon = "";
+    let colorClass = "";
+
+    if (batteryLevel <= 20) {
+      batteryIcon = "fa-battery-empty";
+      colorClass = "battery-critical";
+    } else if (batteryLevel <= 40) {
+      batteryIcon = "fa-battery-quarter";
+      colorClass = "battery-low";
+    } else if (batteryLevel <= 60) {
+      batteryIcon = "fa-battery-half";
+      colorClass = "battery-medium";
+    } else if (batteryLevel <= 80) {
+      batteryIcon = "fa-battery-three-quarters";
+      colorClass = "battery-high";
+    } else {
+      batteryIcon = "fa-battery-full";
+      colorClass = "battery-high";
+    }
+
+    // Add charging/discharging indicator
+    const chargingClass =
+      batteryCurrent > 0
+        ? "battery-charging"
+        : batteryCurrent < 0
+        ? "battery-discharging"
+        : "";
+
+    iconElement.classList.add(batteryIcon, colorClass, chargingClass);
   }
 }
