@@ -10,6 +10,7 @@ class StreetlightMap {
     this.municipalityMarkers = null;
     this.barangayMarkers = null;
     this.map = null;
+    this.isInitialized = false; // Add flag to track initialization
 
     // Initialize GeoJSON layers
     this.geoJsonLayer = null;
@@ -18,14 +19,6 @@ class StreetlightMap {
 
     // Start the initialization
     this.loadCoordinates();
-
-    // Start periodic statistics updates
-    this.updateStatistics();
-    setInterval(() => this.updateStatistics(), 60000); // Update every minute
-
-    // Manage tile cache periodically
-    this.manageTileCache();
-    setInterval(() => this.manageTileCache(), 3600000); // Clean cache every hour
   }
 
   setupMap() {
@@ -247,11 +240,20 @@ class StreetlightMap {
       // Show loader
       this.toggleLoader(true);
 
+      // Check if already initialized
+      if (this.isInitialized) {
+        console.warn("Map is already initialized");
+        this.toggleLoader(false);
+        return;
+      }
+
       const response = await fetch("rsc/coordinates.json");
       this.coordinates = await response.json();
 
       // Initialize map after loading coordinates
       await this.initializeMap();
+
+      this.isInitialized = true; // Mark as initialized
 
       // Hide loader after everything is loaded
       this.toggleLoader(false);
@@ -263,6 +265,12 @@ class StreetlightMap {
   }
 
   async initializeMap() {
+    // Check if map is already initialized
+    if (this.map) {
+      console.warn("Map is already initialized");
+      return;
+    }
+
     // Find center point from coordinates
     const center = this.calculateMapCenter();
 
@@ -284,7 +292,6 @@ class StreetlightMap {
     this.geoJsonLayer = new L.LayerGroup().addTo(this.map); // Add GeoJSON layer group
 
     // Setup event handlers
-    // this.setupMouseCoordinates();
     this.map.on("zoomend", () => this.handleZoom());
     this.setupRegionControls(); // Add this line to initialize region controls
 
@@ -643,7 +650,6 @@ class StreetlightMap {
   // Update showMunicipalityMarkers to filter by municipality code
   async showMunicipalityMarkers(province) {
     this.municipalityMarkers.clearLayers();
-    // console.log("Showing municipality markers for province:", province);
 
     try {
       // Get municipality data from coordinates
@@ -653,147 +659,180 @@ class StreetlightMap {
         return;
       }
 
-      // Add markers for municipalities that have matching codes
-      for (const municipalityName in provinceData.municipalities) {
-        const municipalityData = provinceData.municipalities[municipalityName];
+      // Create batches of municipality requests
+      const BATCH_SIZE = 5;
+      const municipalities = Object.entries(provinceData.municipalities);
+      const batches = [];
 
-        // Skip if no valid coordinates or municipality code
-        if (
-          !municipalityData.lat ||
-          !municipalityData.long ||
-          !municipalityData.municipality_code
-        ) {
-          console.warn(`Missing data for municipality: ${municipalityName}`);
-          continue;
-        }
+      // Split into batches
+      for (let i = 0; i < municipalities.length; i += BATCH_SIZE) {
+        batches.push(municipalities.slice(i, i + BATCH_SIZE));
+      }
 
-        // Get count statistics from API for this municipality
-        const statsResponse = await fetch(
-          `api/endpoints/get_count.php?pattern=${municipalityData.municipality_code}`
-        );
-        const statsData = await statsResponse.json();
-
-        if (statsData.status !== "success" || statsData.data.total === 0) {
-          continue;
-        }
-
-        // Create marker
-        const marker = L.marker([municipalityData.lat, municipalityData.long], {
-          icon: L.divIcon({
-            className: "custom-marker",
-            html: '<i class="fas fa-map-marker-alt text-primary fa-2x"></i>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 30],
-          }),
-        });
-
-        // Modern municipality popup - replace the existing popup content in showMunicipalityMarkers method
-        // Inside your showMunicipalityMarkers method where you create the popupContent
-        const popupContent = `
-          <div class="modern-popup p-3">
-            <div class="popup-header mb-3">
-              <h6 class="fw-bold mb-0 text-center">${municipalityName}</h6>
-            </div>
-            
-            <div class="stats-grid mb-3">
-              <div class="stat-box">
-                <div class="stat-value">${statsData.data.total}</div>
-                <div class="stat-label">Total</div>
-              </div>
-              <div class="stat-box active">
-                <div class="stat-value">${statsData.data.active}</div>
-                <div class="stat-label">Active</div>
-              </div>
-              <div class="stat-box inactive">
-                <div class="stat-value">${statsData.data.inactive}</div>
-                <div class="stat-label">Inactive</div>
-              </div>
-            </div>
-            
-            <button class="btn btn-sm btn-primary w-100 view-details">View Details</button>
-          </div>
-        `;
-
-        // Add this to your code right before defining the popup content
-        if (!document.getElementById("modern-popup-styles")) {
-          const styleSheet = document.createElement("style");
-          styleSheet.id = "modern-popup-styles";
-          styleSheet.textContent = `
-            .modern-popup {
-              font-family: system-ui, -apple-system, sans-serif;
-            }
-            
-            .modern-popup .popup-header {
-              border-bottom: 1px solid #eee;
-              padding-bottom: 8px;
-            }
-            
-            .modern-popup .stats-grid {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 8px;
-            }
-            
-            .modern-popup .stat-box {
-              padding: 8px 4px;
-              border-radius: 6px;
-              text-align: center;
-              background: #f8f9fa;
-            }
-            
-            .modern-popup .stat-box.active {
-              background: rgba(40, 167, 69, 0.1);
-            }
-            
-            .modern-popup .stat-box.active .stat-value {
-              color: #28a745;
-            }
-            
-            .modern-popup .stat-box.inactive {
-              background: rgba(220, 53, 69, 0.1);
-            }
-            
-            .modern-popup .stat-box.inactive .stat-value {
-              color: #dc3545;
-            }
-            
-            .modern-popup .stat-value {
-              font-weight: bold;
-              font-size: 1.2rem;
-            }
-            
-            .modern-popup .stat-label {
-              font-size: 0.8rem;
-              color: #6c757d;
-            }
-            
-            .modern-popup .view-details {
-              transition: all 0.2s;
-            }
-            
-            .modern-popup .view-details:hover {
-              transform: translateY(-1px);
-            }
-          `;
-          document.head.appendChild(styleSheet);
-        }
-
-        marker.bindPopup(popupContent);
-        marker.on("popupopen", (e) => {
-          const popup = e.popup;
-          const button = popup._contentNode.querySelector(".view-details");
-          if (button) {
-            button.addEventListener("click", () => {
-              this.showBarangayMarkers(province, municipalityName);
-              this.map.flyTo(
-                [municipalityData.lat, municipalityData.long],
-                this.zoomLevels.municipality
+      // Process each batch in parallel
+      for (const batch of batches) {
+        // Process municipalities in current batch concurrently
+        const batchPromises = batch.map(
+          async ([municipalityName, municipalityData]) => {
+            // Skip if no valid coordinates or municipality code
+            if (
+              !municipalityData.lat ||
+              !municipalityData.long ||
+              !municipalityData.municipality_code
+            ) {
+              console.warn(
+                `Missing data for municipality: ${municipalityName}`
               );
+              return null;
+            }
+
+            try {
+              // Use the cached version if available
+              const cacheKey = `municipality_${municipalityData.municipality_code}`;
+              let statsData = StreetlightQueries.getFromCache(cacheKey);
+
+              if (!statsData) {
+                // Fetch if not in cache
+                const response = await fetch(
+                  `api/endpoints/get_count.php?pattern=${municipalityData.municipality_code}`
+                );
+                statsData = await response.json();
+                // Cache the result
+                StreetlightQueries.setCache(cacheKey, statsData);
+              }
+
+              if (
+                statsData.status !== "success" ||
+                statsData.data.total === 0
+              ) {
+                return null;
+              }
+
+              // Create marker with cached data
+              return {
+                marker: L.marker(
+                  [municipalityData.lat, municipalityData.long],
+                  {
+                    icon: L.divIcon({
+                      className: "custom-marker",
+                      html: '<i class="fas fa-map-marker-alt text-primary fa-2x"></i>',
+                      iconSize: [30, 30],
+                      iconAnchor: [15, 30],
+                    }),
+                  }
+                ),
+                data: {
+                  name: municipalityName,
+                  stats: statsData.data,
+                  location: [municipalityData.lat, municipalityData.long],
+                  zoomLevel: this.zoomLevels.municipality,
+                },
+              };
+            } catch (error) {
+              console.error(
+                `Error processing municipality ${municipalityName}:`,
+                error
+              );
+              return null;
+            }
+          }
+        );
+
+        // Wait for all municipalities in batch to process
+        const results = await Promise.all(batchPromises);
+
+        // Add valid markers to the map
+        results.forEach((result) => {
+          if (result) {
+            const { marker, data } = result;
+
+            const popupContent = `
+              <div class="modern-popup p-3">
+                <div class="popup-header mb-3">
+                  <h6 class="fw-bold mb-0 text-center">${data.name}</h6>
+                </div>
+                
+                <div class="stats-grid mb-3">
+                  <div class="stat-box">
+                    <div class="stat-value">${data.stats.total}</div>
+                    <div class="stat-label">Total</div>
+                  </div>
+                  <div class="stat-box active">
+                    <div class="stat-value">${data.stats.active}</div>
+                    <div class="stat-label">Active</div>
+                  </div>
+                  <div class="stat-box inactive">
+                    <div class="stat-value">${data.stats.inactive}</div>
+                    <div class="stat-label">Inactive</div>
+                  </div>
+                </div>
+                
+                <button class="btn btn-sm btn-primary w-100 view-details">View Details</button>
+              </div>
+            `;
+
+            // Add these styles if not already present
+            if (!document.getElementById("modern-popup-styles")) {
+              const style = document.createElement("style");
+              style.id = "modern-popup-styles";
+              style.textContent = `
+                .modern-popup {
+                  min-width: 250px;
+                  max-width: 300px;
+                }
+                .stats-grid {
+                  display: grid;
+                  grid-template-columns: repeat(3, 1fr);
+                  gap: 0.5rem;
+                  text-align: center;
+                }
+                .stat-box {
+                  padding: 0.5rem;
+                  background: #f8f9fa;
+                  border-radius: 0.25rem;
+                  transition: transform 0.2s;
+                }
+                .stat-box:hover {
+                  transform: translateY(-2px);
+                }
+                .stat-box.active {
+                  background: #e8f5e9;
+                }
+                .stat-box.inactive {
+                  background: #ffebee;
+                }
+                .stat-value {
+                  font-size: 1.25rem;
+                  font-weight: bold;
+                  color: #212529;
+                }
+                .stat-label {
+                  font-size: 0.75rem;
+                  color: #6c757d;
+                  margin-top: 0.25rem;
+                }
+              `;
+              document.head.appendChild(style);
+            }
+
+            marker.bindPopup(popupContent);
+            marker.on("popupopen", (e) => {
+              const button =
+                e.popup._contentNode.querySelector(".view-details");
+              if (button) {
+                button.addEventListener("click", () => {
+                  this.showBarangayMarkers(province, data.name);
+                  this.map.flyTo(data.location, data.zoomLevel);
+                });
+              }
             });
+
+            this.municipalityMarkers.addLayer(marker);
           }
         });
 
-        this.municipalityMarkers.addLayer(marker);
+        // Small delay between batches to prevent UI blocking
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
     } catch (error) {
       console.error("Error showing municipality markers:", error);
@@ -869,35 +908,34 @@ class StreetlightMap {
   }
 
   handleZoom() {
-    const zoom = this.map.getZoom();
-
-    if (zoom < 9) {
-      this.map.removeLayer(this.municipalityMarkers);
-      this.map.removeLayer(this.barangayMarkers);
-      this.provinceMarkers.addTo(this.map);
-    } else if (zoom < this.zoomLevels.city) {
-      this.provinceMarkers.addTo(this.map);
-      this.map.removeLayer(this.municipalityMarkers);
-      this.map.removeLayer(this.barangayMarkers);
-    } else if (zoom < this.zoomLevels.municipality) {
-      this.map.removeLayer(this.provinceMarkers);
-      this.municipalityMarkers.addTo(this.map);
-      this.map.removeLayer(this.barangayMarkers);
-    } else {
-      this.map.removeLayer(this.provinceMarkers);
-      this.map.removeLayer(this.municipalityMarkers);
-      this.barangayMarkers.addTo(this.map);
+    // Clear existing timeout
+    if (this.zoomTimeout) {
+      clearTimeout(this.zoomTimeout);
     }
-  }
 
-  // setupMouseCoordinates() {
-  //   this.map.on("mousemove", (e) => {
-  //     const coordinatesText = `Lat: ${e.latlng.lat.toFixed(
-  //       6
-  //     )}, Lng: ${e.latlng.lng.toFixed(6)}`;
-  //     document.getElementById("coordinates").innerText = coordinatesText;
-  //   });
-  // }
+    // Set new timeout
+    this.zoomTimeout = setTimeout(() => {
+      const zoom = this.map.getZoom();
+
+      if (zoom < 9) {
+        this.map.removeLayer(this.municipalityMarkers);
+        this.map.removeLayer(this.barangayMarkers);
+        this.provinceMarkers.addTo(this.map);
+      } else if (zoom < this.zoomLevels.city) {
+        this.provinceMarkers.addTo(this.map);
+        this.map.removeLayer(this.municipalityMarkers);
+        this.map.removeLayer(this.barangayMarkers);
+      } else if (zoom < this.zoomLevels.municipality) {
+        this.map.removeLayer(this.provinceMarkers);
+        this.municipalityMarkers.addTo(this.map);
+        this.map.removeLayer(this.barangayMarkers);
+      } else {
+        this.map.removeLayer(this.provinceMarkers);
+        this.map.removeLayer(this.municipalityMarkers);
+        this.barangayMarkers.addTo(this.map);
+      }
+    }, 10); // Wait 10ms after zoom ends before updating
+  }
 
   async createProvincePopup(province) {
     // Create a DOM element container
