@@ -14,7 +14,15 @@
     <link rel="stylesheet" href="rsc/css/details.css" />
   </head>
   <body>
-    <!-- <nav
+    <div class="loading-overlay">
+      <div class="loader">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+    <nav
       class="navbar navbar-light"
       id="navbar"
       style="z-index: 1050; width: 40%; border-radius: 30px">
@@ -30,7 +38,7 @@
             position: relative;
             width: 100%;
           ">
-          <div class="search-box" style="width: 100%">
+          <!-- <div class="search-box" style="width: 100%">
             <input
               class="form-control border-0 shadow-none"
               type="text"
@@ -42,12 +50,12 @@
                 box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
               " />
             <i class="fas fa-search fs-5"></i>
-          </div>
+          </div> -->
         </form>
       </div>
     </nav>
 
-    <div
+    <!-- <div
       id="coordinates"
       style="
         position: absolute;
@@ -61,20 +69,21 @@
       ">
       Move cursor to see coordinates
     </div> -->
+    </div> -->
     <div id="map"></div>
     <script src="rsc/js/streetlight_queries.js"></script>
     <script src="rsc/js/streetlights.js"></script>
     <script src="rsc/bootstrap/apexcharts/apexcharts.js"></script>
     <script src="rsc/bootstrap/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="rsc/js/details.js"></script>
+    <script src="rsc/js/localforage.min.js"></script>
+
     <script>
       let map;
       document.addEventListener("DOMContentLoaded", () => {
         map = new StreetlightMap();
-          setTimeout(() => {
-            map.map.invalidateSize();
-          }, 300);
-        
+        setTimeout(() => {
+          map.map.invalidateSize();
+        }, 10);
       });
     </script>
   </body>
