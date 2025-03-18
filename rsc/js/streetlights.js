@@ -964,78 +964,143 @@ class StreetlightMap {
 
   handleZoom() {
     try {
-      const zoom = this.map.getZoom();
+        const zoom = this.map.getZoom();
 
-      if (zoom < 9 || zoom < this.zoomLevels.city) {
-        // Clear other layers
-        this.municipalityMarkers.clearLayers();
-        this.barangayMarkers.clearLayers();
+        if (zoom < 9 || zoom < this.zoomLevels.city) {
+            // Clear other layers
+            this.municipalityMarkers.clearLayers();
+            this.barangayMarkers.clearLayers();
+            this.provinceMarkers.clearLayers();
 
-        // Restore ALL province markers including clicked ones
-        this.provinceMarkers.clearLayers();
-        Object.entries(this.coordinates).forEach(([province, data]) => {
-          if (data.lat && data.long && data.municipalities && 
-              Object.keys(data.municipalities).length > 0) {
-            
-            // Create marker for each province
-            const marker = L.marker([data.lat, data.long], {
-              icon: L.divIcon({
-                className: "custom-marker",
-                html: '<i class="fas fa-building text-primary fa-3x"></i>',
-                iconSize: [40, 40],
-                iconAnchor: [20, 40],
-              }),
-              province: province
+            Object.entries(this.coordinates).forEach(([province, data]) => {
+                if (data.lat && data.long && data.municipalities && 
+                    Object.keys(data.municipalities).length > 0) {
+
+                    const marker = L.marker([data.lat, data.long], {
+                        icon: L.divIcon({
+                            className: "custom-marker",
+                            html: '<i class="fas fa-building text-primary fa-3x" style="pointer-events: none;"></i>',
+                            iconSize: [40, 40],
+                            iconAnchor: [20, 40],
+                        }),
+                        province: province
+                    });
+
+                    this.createProvincePopup({
+                        name: province,
+                        code: data.province_code
+                    }).then(popupContent => {
+                        const popup = L.popup({
+                            closeButton: false,
+                            offset: [0, -20],
+                        }).setContent(popupContent);
+
+                        marker.bindPopup(popup);
+                    });
+
+                    marker.on("mouseover", function () {
+                        this.openPopup();
+                        this.setZIndexOffset(1000);
+                    });
+                    marker.on("mouseout", function () {
+                        this.closePopup();
+                        this.setZIndexOffset(0);
+                    });
+
+                    marker.on("click", () => {
+                        this.provinceMarkers.removeLayer(marker);
+                        this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+                        this.showMunicipalityMarkers(province);
+                    });
+
+                    this.provinceMarkers.addLayer(marker);
+                }
             });
 
-            // Store reference
-            if (!this.storedProvinceMarkers) {
-              this.storedProvinceMarkers = new Map();
+            if (!this.map.hasLayer(this.provinceMarkers)) {
+                this.provinceMarkers.addTo(this.map);
             }
-            
-            this.createProvincePopup({
-              name: province,
-              code: data.province_code
-            }).then(popupContent => {
-              marker.bindPopup(popupContent);
+
+            // Load and display GeoJSON files for regions
+            Object.entries(geoJsonFiles).forEach(([regionCode, fileName]) => {
+                fetch(`rsc/geojson/${fileName}`)
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then((data) => {
+                        this.geoJsonLayers[regionCode] = L.geoJSON(data, {
+                            style: () => ({
+                                color: "transparent",
+                                weight: 0,
+                                fillOpacity: 0,
+                                fillColor: "transparent",
+                                className: "geojson-path",
+                                interactive: true
+                            }),
+                            onEachFeature: (feature, layer) => {
+                                layer.on({
+                                    mouseover: () => {
+                                        layer.setStyle({
+                                            color: '#1671cb',
+                                            weight: 2,
+                                            fillOpacity: 0.3,
+                                            fillColor: '#2196f3'
+                                        });
+
+                                        if (!layer.nameTooltip) {
+                                            layer.nameTooltip = L.tooltip({
+                                                permanent: true,
+                                                direction: 'center',
+                                                className: 'province-name-tooltip',
+                                                offset: [0, 0]
+                                            }).setContent(feature.properties.name)
+                                              .setLatLng(layer.getCenter());
+                                            layer.nameTooltip.addTo(this.map);
+                                        }
+                                    },
+                                    mouseout: () => {
+                                        layer.setStyle({
+                                            color: 'transparent',
+                                            weight: 0,
+                                            fillOpacity: 0,
+                                            fillColor: 'transparent'
+                                        });
+
+                                        if (layer.nameTooltip) {
+                                            layer.nameTooltip.remove();
+                                            layer.nameTooltip = null;
+                                        }
+                                    }
+                                });
+                            }
+                        }).addTo(this.geoJsonLayer);
+                    })
+                    .catch((error) => {
+                        console.error(`Error loading GeoJSON for ${regionCode}:`, error);
+                    });
             });
-
-
-            this.storedProvinceMarkers.set(province, marker);
-
-
-            // Add to layer
-            this.provinceMarkers.addLayer(marker);
-            
-
-          }
-        });
-
-        // Add province layer to map
-        if (!this.map.hasLayer(this.provinceMarkers)) {
-          this.provinceMarkers.addTo(this.map);
+        } else if (zoom < this.zoomLevels.municipality) {
+            this.map.removeLayer(this.provinceMarkers);
+            this.municipalityMarkers.addTo(this.map);
+            this.map.removeLayer(this.barangayMarkers);
+        } else {
+            this.map.removeLayer(this.provinceMarkers);
+            this.map.removeLayer(this.municipalityMarkers);
+            this.barangayMarkers.addTo(this.map);
         }
 
-      } else if (zoom < this.zoomLevels.municipality) {
-        // Show municipality level  
-        this.map.removeLayer(this.provinceMarkers);
-        this.municipalityMarkers.addTo(this.map);
-        this.map.removeLayer(this.barangayMarkers);
-
-      } else {
-        // Show barangay level
-        this.map.removeLayer(this.provinceMarkers);
-        this.map.removeLayer(this.municipalityMarkers); 
-        this.barangayMarkers.addTo(this.map);
-      }
-
-      // Reset active state
-      this.activeProvince = null;
-
+        this.activeProvince = null;
     } catch (error) {
-      console.error('Error in handleZoom:', error);
+        console.error('Error in handleZoom:', error);
     }
-  }
+}
+
+
+
+
 
   // Helper method to store initial province markers
   storeInitialProvinceMarkers() {
@@ -2637,5 +2702,107 @@ class StreetlightMap {
       console.error("Error managing tile cache:", error);
     }
   } // End of manageTileCache method
+
+  disableAllGeoJsonInteractions() {
+    // Store original styles before disabling
+    this.originalGeoJsonStyles = {};
+
+    Object.values(this.geoJsonLayers).forEach((layer) => {
+        layer.eachLayer((sublayer) => {
+            // Save original styles
+            this.originalGeoJsonStyles[sublayer._leaflet_id] = {
+                color: sublayer.options.color,
+                weight: sublayer.options.weight,
+                fillOpacity: sublayer.options.fillOpacity,
+                fillColor: sublayer.options.fillColor,
+                interactive: sublayer.options.interactive,
+            };
+
+            // Disable interactions and hide the layer
+            sublayer.setStyle({
+                color: "transparent",
+                weight: 0,
+                fillOpacity: 0,
+                fillColor: "transparent",
+            });
+
+            if (sublayer.nameTooltip) {
+                sublayer.nameTooltip.remove();
+                sublayer.nameTooltip = null;
+            }
+
+            sublayer.off("mouseover mouseout click");
+            sublayer.options.interactive = false;
+        });
+
+        layer.isVisible = false;
+    });
+
+    this.activeGeoJsonLayer = null;
+    this.isGeoJsonHovered = false;
+}
+
+enableAllGeoJsonInteractions() {
+    if (!this.originalGeoJsonStyles) return;
+
+    Object.values(this.geoJsonLayers).forEach((layer) => {
+        layer.eachLayer((sublayer) => {
+            const originalStyle = this.originalGeoJsonStyles[sublayer._leaflet_id];
+
+            if (originalStyle) {
+                sublayer.setStyle({
+                    color: originalStyle.color,
+                    weight: originalStyle.weight,
+                    fillOpacity: originalStyle.fillOpacity,
+                    fillColor: originalStyle.fillColor,
+                });
+
+                sublayer.options.interactive = originalStyle.interactive;
+
+                // Re-add event listeners
+                sublayer.on({
+                    mouseover: () => {
+                        sublayer.setStyle({
+                            color: "#1671cb",
+                            weight: 2,
+                            fillOpacity: 0.3,
+                            fillColor: "#2196f3",
+                        });
+
+                        if (!sublayer.nameTooltip) {
+                            sublayer.nameTooltip = L.tooltip({
+                                permanent: true,
+                                direction: "center",
+                                className: "province-name-tooltip",
+                                offset: [0, 0],
+                            }).setContent(sublayer.feature.properties.name).setLatLng(sublayer.getCenter());
+
+                            sublayer.nameTooltip.addTo(this.map);
+                        }
+                    },
+                    mouseout: () => {
+                        sublayer.setStyle({
+                            color: originalStyle.color,
+                            weight: originalStyle.weight,
+                            fillOpacity: originalStyle.fillOpacity,
+                            fillColor: originalStyle.fillColor,
+                        });
+
+                        if (sublayer.nameTooltip) {
+                            sublayer.nameTooltip.remove();
+                            sublayer.nameTooltip = null;
+                        }
+                    },
+                });
+            }
+        });
+
+        layer.isVisible = true;
+    });
+
+    this.activeGeoJsonLayer = null;
+    this.isGeoJsonHovered = false;
+}
+
 
 } // End of StreetlightMap class
