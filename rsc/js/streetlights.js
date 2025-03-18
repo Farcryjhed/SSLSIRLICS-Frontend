@@ -2616,14 +2616,15 @@ class StreetlightMap {
       statusBadge.className = `badge ${isActive ? "bg-success" : "bg-danger"}`;
     }
   }
-    async manageTileCache() {
-    const tilesCacheStorage = localforage.createInstance({
-      name: "map-tiles",
-    });
 
+  async manageTileCache() {
     try {
+      const tilesCacheStorage = localforage.createInstance({
+        name: "map-tiles"
+      });
+  
       const keys = await tilesCacheStorage.keys();
-
+  
       if (keys.length > 800) {
         // Remove the oldest tiles (first 200)
         const tilesToRemove = keys.slice(0, 200);
@@ -2635,24 +2636,6 @@ class StreetlightMap {
     } catch (error) {
       console.error("Error managing tile cache:", error);
     }
-    async manageTileCache() {
-      const tilesCacheStorage = localforage.createInstance({
-        name: "map-tiles",
-      });
-  
-      try {
-        const keys = await tilesCacheStorage.keys();
-  
-        if (keys.length > 800) {
-          // Remove the oldest tiles (first 200)
-          const tilesToRemove = keys.slice(0, 200);
-          for (const key of tilesToRemove) {
-            await tilesCacheStorage.removeItem(key);
-          }
-          console.log("Cleaned up old tiles from cache");
-        }
-      } catch (error) {
-        console.error("Error managing tile cache:", error);
-      }
-    }
-}
+  } // End of manageTileCache method
+
+} // End of StreetlightMap class
