@@ -244,13 +244,21 @@ class StreetlightMap {
 
   async loadCoordinates() {
     try {
+      // Show loader
+      this.toggleLoader(true);
+
       const response = await fetch("rsc/coordinates.json");
       this.coordinates = await response.json();
 
       // Initialize map after loading coordinates
-      this.initializeMap();
+      await this.initializeMap();
+
+      // Hide loader after everything is loaded
+      this.toggleLoader(false);
     } catch (error) {
       console.error("Failed to load coordinates:", error);
+      // Hide loader on error
+      this.toggleLoader(false);
     }
   }
 
@@ -276,7 +284,7 @@ class StreetlightMap {
     this.geoJsonLayer = new L.LayerGroup().addTo(this.map); // Add GeoJSON layer group
 
     // Setup event handlers
-    this.setupMouseCoordinates();
+    // this.setupMouseCoordinates();
     this.map.on("zoomend", () => this.handleZoom());
     this.setupRegionControls(); // Add this line to initialize region controls
 
@@ -311,173 +319,195 @@ class StreetlightMap {
   }
 
   async addProvinceMarkers() {
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
+    try {
+      // Show loading overlay
+      document.querySelector(".loading-overlay").style.display = "flex";
 
-    for (const province in this.coordinates) {
-      const data = this.coordinates[province];
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
 
-      if (
-        data.lat &&
-        data.long &&
-        data.municipalities &&
-        Object.keys(data.municipalities).length > 0
-      ) {
-        const marker = L.marker([data.lat, data.long], {
-          icon: L.divIcon({
-            className: "custom-marker",
-            html: '<i class="fas fa-building text-primary fa-3x"></i>',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40],
-          }),
-        });
+      for (const province in this.coordinates) {
+        const data = this.coordinates[province];
 
-        const popupContent = await this.createProvincePopup({
-          name: province,
-          code: data.province_code,
-        });
-
-        marker.bindPopup(popupContent);
-
-        const disableAllGeoJsonInteractions = () => {
-          // Hide all GeoJSON layers and disable interactions
-          Object.values(this.geoJsonLayers).forEach((layer) => {
-            // Make layer invisible
-            layer.setStyle({
-              color: "transparent",
-              weight: 0,
-              fillOpacity: 0,
-              fillColor: "transparent",
-            });
-
-            // Remove tooltips and province names
-            layer.eachLayer((sublayer) => {
-              // Remove existing tooltips
-              if (sublayer.nameTooltip) {
-                sublayer.nameTooltip.remove();
-                sublayer.nameTooltip = null;
-              }
-
-              // Remove any bound popups or tooltips
-              if (sublayer.getPopup()) {
-                sublayer.unbindPopup();
-              }
-              if (sublayer.getTooltip()) {
-                sublayer.unbindTooltip();
-              }
-
-              // Disable all interactions
-              sublayer.off("mouseover");
-              sublayer.off("mouseout");
-              sublayer.off("click");
-              sublayer.options.interactive = false;
-            });
-
-            // Reset states
-            layer.isVisible = false;
-            layer.eachLayer((sublayer) => {
-              sublayer.isVisible = false;
-            });
+        if (
+          data.lat &&
+          data.long &&
+          data.municipalities &&
+          Object.keys(data.municipalities).length > 0
+        ) {
+          const marker = L.marker([data.lat, data.long], {
+            icon: L.divIcon({
+              className: "custom-marker",
+              html: '<i class="fas fa-building text-primary fa-3x"></i>',
+              iconSize: [40, 40],
+              iconAnchor: [20, 40],
+            }),
           });
 
-          // Clear active layer reference and hover state
-          this.activeGeoJsonLayer = null;
-          this.isGeoJsonHovered = false;
-
-          // Make entire GeoJSON layer group non-interactive and remove all tooltips
-          this.geoJsonLayer.eachLayer((layer) => {
-            layer.options.interactive = false;
-            // Remove any province name tooltips at the layer group level
-            if (layer.nameTooltip) {
-              layer.nameTooltip.remove();
-              layer.nameTooltip = null;
-            }
+          const popupContent = await this.createProvincePopup({
+            name: province,
+            code: data.province_code,
           });
 
-          // Remove any remaining tooltips from the map
-          const tooltips = document.querySelectorAll(".province-name-tooltip");
-          tooltips.forEach((tooltip) => tooltip.remove());
-        };
+          marker.bindPopup(popupContent);
 
-        // Update the marker click handlers
-        if (isMobile) {
-          // Mobile handler
-          marker.on("popupopen", (e) => {
-            const zoomButton =
-              e.popup._contentNode.querySelector(".zoom-to-province");
-            if (zoomButton) {
-              zoomButton.addEventListener("click", () => {
-                disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
-                this.provinceMarkers.removeLayer(marker);
-                this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-                this.showMunicipalityMarkers(province);
-                marker.closePopup();
+          const disableAllGeoJsonInteractions = () => {
+            // Hide all GeoJSON layers and disable interactions
+            Object.values(this.geoJsonLayers).forEach((layer) => {
+              // Make layer invisible
+              layer.setStyle({
+                color: "transparent",
+                weight: 0,
+                fillOpacity: 0,
+                fillColor: "transparent",
               });
-            }
-          });
-        } else {
-          // Desktop handler
-          marker.on("click", () => {
-            disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
-            this.provinceMarkers.removeLayer(marker);
-            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-            this.showMunicipalityMarkers(province);
-          });
-        }
 
-        if (isMobile) {
-          // Mobile: Show popup on click and handle zoom button
-          const popup = L.popup({
-            closeButton: true,
-            autoClose: false,
-            closeOnClick: false,
-            offset: [0, -20],
-          }).setContent(popupContent);
+              // Remove tooltips and province names
+              layer.eachLayer((sublayer) => {
+                // Remove existing tooltips
+                if (sublayer.nameTooltip) {
+                  sublayer.nameTooltip.remove();
+                  sublayer.nameTooltip = null;
+                }
 
-          marker.bindPopup(popup);
+                // Remove any bound popups or tooltips
+                if (sublayer.getPopup()) {
+                  sublayer.unbindPopup();
+                }
+                if (sublayer.getTooltip()) {
+                  sublayer.unbindTooltip();
+                }
 
-          marker.on("popupopen", (e) => {
-            const zoomButton =
-              e.popup._contentNode.querySelector(".zoom-to-province");
-            if (zoomButton) {
-              zoomButton.addEventListener("click", () => {
-                disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
-                this.provinceMarkers.removeLayer(marker); // Remove marker immediately
-                this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-                this.showMunicipalityMarkers(province);
-                marker.closePopup();
+                // Disable all interactions
+                sublayer.off("mouseover");
+                sublayer.off("mouseout");
+                sublayer.off("click");
+                sublayer.options.interactive = false;
               });
-            }
-          });
-        } else {
-          // Desktop: Show popup on hover
-          const popup = L.popup({
-            closeButton: false,
-            offset: [0, -20],
-          }).setContent(popupContent);
 
-          marker.on("mouseover", () => {
-            marker.openPopup();
-          });
+              // Reset states
+              layer.isVisible = false;
+              layer.eachLayer((sublayer) => {
+                sublayer.isVisible = false;
+              });
+            });
 
-          marker.on("mouseout", () => {
-            marker.closePopup();
-          });
+            // Clear active layer reference and hover state
+            this.activeGeoJsonLayer = null;
+            this.isGeoJsonHovered = false;
 
-          marker.on("click", () => {
-            disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
-            this.provinceMarkers.removeLayer(marker); // Remove marker immediately
-            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-            this.showMunicipalityMarkers(province);
-          });
+            // Make entire GeoJSON layer group non-interactive and remove all tooltips
+            this.geoJsonLayer.eachLayer((layer) => {
+              layer.options.interactive = false;
+              // Remove any province name tooltips at the layer group level
+              if (layer.nameTooltip) {
+                layer.nameTooltip.remove();
+                layer.nameTooltip = null;
+              }
+            });
 
-          marker.bindPopup(popup);
+            // Remove any remaining tooltips from the map
+            const tooltips = document.querySelectorAll(
+              ".province-name-tooltip"
+            );
+            tooltips.forEach((tooltip) => tooltip.remove());
+          };
+
+          // Update the marker click handlers
+          if (isMobile) {
+            // Mobile handler
+            marker.on("popupopen", (e) => {
+              const zoomButton =
+                e.popup._contentNode.querySelector(".zoom-to-province");
+              if (zoomButton) {
+                zoomButton.addEventListener("click", () => {
+                  disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
+                  this.provinceMarkers.removeLayer(marker);
+                  this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+                  this.showMunicipalityMarkers(province);
+                  marker.closePopup();
+                });
+              }
+            });
+          } else {
+            // Desktop handler
+            marker.on("click", () => {
+              disableAllGeoJsonInteractions(); // Disable all GeoJSON interactions including province names
+              this.provinceMarkers.removeLayer(marker);
+              this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+              this.showMunicipalityMarkers(province);
+            });
+          }
+
+          if (isMobile) {
+            // Mobile: Show popup on click and handle zoom button
+            const popup = L.popup({
+              closeButton: true,
+              autoClose: false,
+              closeOnClick: false,
+              offset: [0, -20],
+            }).setContent(popupContent);
+
+            marker.bindPopup(popup);
+
+            marker.on("popupopen", (e) => {
+              const zoomButton =
+                e.popup._contentNode.querySelector(".zoom-to-province");
+              if (zoomButton) {
+                zoomButton.addEventListener("click", () => {
+                  disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
+                  this.provinceMarkers.removeLayer(marker); // Remove marker immediately
+                  this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+                  this.showMunicipalityMarkers(province);
+                  marker.closePopup();
+                });
+              }
+            });
+          } else {
+            // Desktop: Show popup on hover
+            const popup = L.popup({
+              closeButton: false,
+              offset: [0, -20],
+            }).setContent(popupContent);
+
+            marker.on("mouseover", () => {
+              marker.openPopup();
+            });
+
+            marker.on("mouseout", () => {
+              marker.closePopup();
+            });
+
+            marker.on("click", () => {
+              disableAllGeoJsonInteractions(); // Use new method instead of hideAllGeoJsonLayers
+              this.provinceMarkers.removeLayer(marker); // Remove marker immediately
+              this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+              this.showMunicipalityMarkers(province);
+            });
+
+            marker.bindPopup(popup);
+          }
+
+          this.provinceMarkers.addLayer(marker);
         }
-
-        this.provinceMarkers.addLayer(marker);
       }
+
+      // Hide loading overlay after all markers are added
+      document.querySelector(".loading-overlay").style.display = "none";
+    } catch (error) {
+      console.error("Error adding province markers:", error);
+      // Hide loading overlay even if there's an error
+      document.querySelector(".loading-overlay").style.display = "none";
+    }
+  }
+
+  // Add this new method to show/hide loader
+  toggleLoader(show) {
+    const loader = document.querySelector(".loading-overlay");
+    if (loader) {
+      loader.style.display = show ? "flex" : "none";
     }
   }
 
@@ -860,14 +890,14 @@ class StreetlightMap {
     }
   }
 
-  setupMouseCoordinates() {
-    this.map.on("mousemove", (e) => {
-      const coordinatesText = `Lat: ${e.latlng.lat.toFixed(
-        6
-      )}, Lng: ${e.latlng.lng.toFixed(6)}`;
-      document.getElementById("coordinates").innerText = coordinatesText;
-    });
-  }
+  // setupMouseCoordinates() {
+  //   this.map.on("mousemove", (e) => {
+  //     const coordinatesText = `Lat: ${e.latlng.lat.toFixed(
+  //       6
+  //     )}, Lng: ${e.latlng.lng.toFixed(6)}`;
+  //     document.getElementById("coordinates").innerText = coordinatesText;
+  //   });
+  // }
 
   async createProvincePopup(province) {
     // Create a DOM element container
