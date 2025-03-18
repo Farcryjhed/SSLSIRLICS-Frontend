@@ -884,25 +884,98 @@ class StreetlightMap {
   }
 
   handleZoom() {
-    const zoom = this.map.getZoom();
+    try {
+      const zoom = this.map.getZoom();
 
-    if (zoom < 9) {
-      this.map.removeLayer(this.municipalityMarkers);
-      this.map.removeLayer(this.barangayMarkers);
-      this.provinceMarkers.addTo(this.map);
-    } else if (zoom < this.zoomLevels.city) {
-      this.provinceMarkers.addTo(this.map);
-      this.map.removeLayer(this.municipalityMarkers);
-      this.map.removeLayer(this.barangayMarkers);
-    } else if (zoom < this.zoomLevels.municipality) {
-      this.map.removeLayer(this.provinceMarkers);
-      this.municipalityMarkers.addTo(this.map);
-      this.map.removeLayer(this.barangayMarkers);
-    } else {
-      this.map.removeLayer(this.provinceMarkers);
-      this.map.removeLayer(this.municipalityMarkers);
-      this.barangayMarkers.addTo(this.map);
+      if (zoom < 9 || zoom < this.zoomLevels.city) {
+        // Clear other layers
+        this.municipalityMarkers.clearLayers();
+        this.barangayMarkers.clearLayers();
+
+        // Restore ALL province markers including clicked ones
+        this.provinceMarkers.clearLayers();
+        Object.entries(this.coordinates).forEach(([province, data]) => {
+          if (data.lat && data.long && data.municipalities && 
+              Object.keys(data.municipalities).length > 0) {
+            
+            // Create marker for each province
+            const marker = L.marker([data.lat, data.long], {
+              icon: L.divIcon({
+                className: "custom-marker",
+                html: '<i class="fas fa-building text-primary fa-3x"></i>',
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+              }),
+              province: province
+            });
+
+            // Store reference
+            if (!this.storedProvinceMarkers) {
+              this.storedProvinceMarkers = new Map();
+            }
+            
+            this.createProvincePopup({
+              name: province,
+              code: data.province_code
+            }).then(popupContent => {
+              marker.bindPopup(popupContent);
+            });
+
+
+            this.storedProvinceMarkers.set(province, marker);
+
+
+            // Add to layer
+            this.provinceMarkers.addLayer(marker);
+            
+
+          }
+        });
+
+        // Add province layer to map
+        if (!this.map.hasLayer(this.provinceMarkers)) {
+          this.provinceMarkers.addTo(this.map);
+        }
+
+      } else if (zoom < this.zoomLevels.municipality) {
+        // Show municipality level  
+        this.map.removeLayer(this.provinceMarkers);
+        this.municipalityMarkers.addTo(this.map);
+        this.map.removeLayer(this.barangayMarkers);
+
+      } else {
+        // Show barangay level
+        this.map.removeLayer(this.provinceMarkers);
+        this.map.removeLayer(this.municipalityMarkers); 
+        this.barangayMarkers.addTo(this.map);
+      }
+
+      // Reset active state
+      this.activeProvince = null;
+
+    } catch (error) {
+      console.error('Error in handleZoom:', error);
     }
+  }
+
+  // Helper method to store initial province markers
+  storeInitialProvinceMarkers() {
+    this.storedProvinceMarkers = new Map();
+    Object.entries(this.coordinates).forEach(([province, data]) => {
+      if (data.lat && data.long && data.municipalities &&
+          Object.keys(data.municipalities).length > 0) {
+        const marker = L.marker([data.lat, data.long], {
+          icon: L.divIcon({
+            className: "custom-marker", 
+            html: '<i class="fas fa-building text-primary fa-3x"></i>',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+          }),
+          province: province
+        });
+        this.storedProvinceMarkers.set(province, marker);
+      }
+    });
   }
 
   setupMouseCoordinates() {
