@@ -22,7 +22,7 @@ class AuthController {
                 session_start();
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
-                header('Location: dashboard.php');
+                header('Location: ../views/dashboard.php');
                 exit();
             } else {
                 return ['error' => 'Invalid username or password'];
@@ -34,7 +34,7 @@ class AuthController {
     public function logout() {
         session_start();
         session_destroy();
-        header('Location: login.php');
+        header('Location: index.html'); # Balik sa map
         exit();
     }
 }

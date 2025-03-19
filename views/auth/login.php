@@ -11,7 +11,7 @@
             <div class="error"><?php echo $error; ?></div>
         <?php endif; ?>
         
-        <form method="POST" action="../public/index.php">
+        <form method="POST" action="../../public/index.php">
             <div class="form-group">
                 <label>Username:</label>
                 <input type="text" name="username" required>

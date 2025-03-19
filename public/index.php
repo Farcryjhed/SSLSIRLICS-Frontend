@@ -22,7 +22,7 @@ switch ($action) {
         $result = $auth->login();
         if(isset($result['error'])) {
             $error = $result['error'];
-            require_once ROOT_DIR . '/views/login.php';
+            require_once ROOT_DIR . '/views/auth/login.php';
         }
         break;
     
