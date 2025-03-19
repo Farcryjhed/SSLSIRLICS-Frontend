@@ -22,14 +22,65 @@
   }
 
   /* Modal Styling */
+  .modal-dialog {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 1rem);
+  }
+
   .modal-content {
-    background: rgba(255, 255, 255, 0.95); /* Semi-transparent background */
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.5);
     border-radius: 10px;
+    backdrop-filter: blur(15px);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-header {
+    border-bottom: none;
+    text-align: center;
+    padding-bottom: 1rem;
+  }
+
+  .modal-title {
+    width: 100%;
+    text-align: center;
+    color: #333;
+    font-weight: bold;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .form-control {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #333;
+  }
+
+  .form-control::placeholder {
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  /* Ensure modal is centered on mobile */
+  @media (max-width: 768px) {
+    .modal-dialog {
+      margin: 0.5rem;
+    }
+    
+    .modal-content {
+      max-width: 100%;
+    }
   }
 
   /* Ensure the modal backdrop is slightly visible */
   .modal-backdrop.show {
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(25, 0, 0, 0);
   }
 
   /* Fixed positioning for top-right buttons */
@@ -84,14 +135,14 @@
  <!-- Navbar -->
  <nav class="navbar navbar-expand-lg fixed-top bg-transparent">
   <div class="container-fluid">
-    <div class="position-absolute top-0 end-0 mt-1  d-flex">
+    <div class="position-absolute top-0 end-0 mt-2  d-flex">
       <!-- Login Button -->
       <button class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#authModal">
         <i class="fas fa-sign-in-alt"></i> Login
       </button>
 
       <!-- Register Button -->
-      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#authModal">
+      <button class="btn btn-primary btn-sm me-3" data-bs-toggle="modal" data-bs-target="#authModal">
         <i class="fa-solid fa-pen-to-square"></i> Register
       </button>
     </div>
@@ -104,7 +155,7 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Authentication</h5>
+        <h5 class="modal-title">Login</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -117,7 +168,9 @@
             <label for="password" class="form-label">Password</label>
             <input type="password" class="form-control" id="password" placeholder="Enter your password">
           </div>
+          <p>Remember me  <a href="register.php">Forgot Password</a></p>
           <button type="submit" class="btn btn-primary w-100">Submit</button>
+          <p>don't have an account? <a href="register.php">Register</a></p> 
         </form>
       </div>
     </div>
