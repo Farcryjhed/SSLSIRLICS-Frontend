@@ -26,18 +26,23 @@
     display: flex;
     align-items: center;
     min-height: calc(100% - 1rem);
+    margin: 1.75rem auto;
+    max-width: 400px;
+    width: calc(100% - 2rem);
   }
 
   .modal-content {
-    background: rgba(255, 255, 255, 0.1);
+    background: transparent;
     border: 2px solid rgba(255, 255, 255, 0.5);
-    border-radius: 10px;
     backdrop-filter: blur(15px);
     width: 100%;
     max-width: 400px;
     margin: 0 auto;
     padding: 20px;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    overflow: hidden; /* Prevents scrolling */
+    height: auto; /* Adjusts height based on content */
+    max-height: calc(100vh - 3.5rem); /* Prevents modal from being taller than viewport */
   }
 
   .modal-header {
@@ -54,23 +59,51 @@
   }
 
   .modal-body {
-    padding: 20px;
+    padding: 1.5rem;
+    overflow-y: hidden; /* Prevents scrolling */
   }
 
   .form-control {
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.5);
     color: #333;
+    height: 45px;
   }
 
   .form-control::placeholder {
     color: rgba(0, 0, 0, 0.5);
   }
 
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* Improve form aesthetics */
+  .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+
+  .form-check-label {
+    user-select: none;
+  }
+
+  /* Make links more visible on glass background */
+  .modal-body a {
+    font-weight: 500;
+  }
+
+  .modal-body a:hover {
+    text-decoration: underline !important;
+  }
+
   /* Ensure modal is centered on mobile */
   @media (max-width: 768px) {
     .modal-dialog {
-      margin: 0.5rem;
+      margin: 1rem auto;
+      width: calc(100% - 1rem);
     }
     
     .modal-content {
@@ -119,6 +152,66 @@
       font-size: 0.875rem;
     }
   }
+
+  /* Add these new styles */
+  body.modal-open {
+    overflow: hidden;
+    height: 100vh;
+    position: fixed;
+    width: 100%;
+  }
+
+  .modal {
+    overflow: hidden !important;
+  }
+
+  .modal-dialog {
+    margin: 1.75rem auto;
+    max-width: 400px;
+    width: calc(100% - 2rem);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  .modal-content {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(15px);
+    max-height: calc(100vh - 3.5rem);
+    overflow: hidden;
+    margin: 0;
+    padding: 1.5rem;
+  }
+
+  .modal-body {
+    padding: 1rem 0;
+    overflow: hidden;
+  }
+
+  .login-form {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure inputs don't cause overflow */
+  .form-control {
+    max-height: 45px;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Mobile optimization */
+  @media (max-width: 768px) {
+    .modal-dialog {
+      margin: 1rem;
+      width: calc(100% - 2rem);
+    }
+    
+    .modal-content {
+      padding: 1rem;
+    }
+  }
 </style>
       
   </head>
@@ -153,13 +246,13 @@
 <!-- Authentication Modal -->
 <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
+    <div class="modal-content mb-5">
       <div class="modal-header">
         <h5 class="modal-title">Login</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form>
+        <form class="login-form">
           <div class="mb-3">
             <label for="name" class="form-label">Name</label>
             <input type="text" class="form-control" id="name" placeholder="Enter your name">
@@ -168,9 +261,15 @@
             <label for="password" class="form-label">Password</label>
             <input type="password" class="form-control" id="password" placeholder="Enter your password">
           </div>
-          <p>Remember me  <a href="register.php">Forgot Password</a></p>
-          <button type="submit" class="btn btn-primary w-100">Submit</button>
-          <p>don't have an account? <a href="register.php">Register</a></p> 
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="remember">
+              <label class="form-check-label" for="remember">Remember me</label>
+            </div>
+            <a href="register.php" class="text-primary text-decoration-none">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 mb-3">Submit</button>
+          <p class="text-center mb-0">Don't have an account? <a href="register.php" class="text-primary text-decoration-none">Register</a></p>
         </form>
       </div>
     </div>
@@ -196,6 +295,18 @@
             streetlightMap.map.invalidateSize();
           }
         }
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('authModal');
+        
+        modal.addEventListener('show.bs.modal', () => {
+          document.body.classList.add('modal-open');
+        });
+        
+        modal.addEventListener('hidden.bs.modal', () => {
+          document.body.classList.remove('modal-open');
+        });
       });
     </script>
   </body>
