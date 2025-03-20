@@ -664,6 +664,7 @@ class StreetlightMap {
   async showMunicipalityMarkers(province) {
     this.municipalityMarkers.clearLayers();
     // console.log("Showing municipality markers for province:", province);
+    // console.log("Showing municipality markers for province:", province);
 
     try {
       // Get municipality data from coordinates
@@ -696,7 +697,66 @@ class StreetlightMap {
         if (statsData.status !== "success" || statsData.data.total === 0) {
           continue;
         }
+      // Add markers for municipalities that have matching codes
+      for (const municipalityName in provinceData.municipalities) {
+        const municipalityData = provinceData.municipalities[municipalityName];
 
+        // Skip if no valid coordinates or municipality code
+        if (
+          !municipalityData.lat ||
+          !municipalityData.long ||
+          !municipalityData.municipality_code
+        ) {
+          console.warn(`Missing data for municipality: ${municipalityName}`);
+          continue;
+        }
+
+        // Get count statistics from API for this municipality
+        const statsResponse = await fetch(
+          `api/endpoints/get_count.php?pattern=${municipalityData.municipality_code}`
+        );
+        const statsData = await statsResponse.json();
+
+        if (statsData.status !== "success" || statsData.data.total === 0) {
+          continue;
+        }
+
+        // Create marker
+        const marker = L.marker([municipalityData.lat, municipalityData.long], {
+          icon: L.divIcon({
+            className: "custom-marker",
+            html: '<i class="fas fa-map-marker-alt text-primary fa-2x"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+          }),
+        });
+
+        // Modern municipality popup - replace the existing popup content in showMunicipalityMarkers method
+        // Inside your showMunicipalityMarkers method where you create the popupContent
+        const popupContent = `
+          <div class="modern-popup p-3">
+            <div class="popup-header mb-3">
+              <h6 class="fw-bold mb-0 text-center">${municipalityName}</h6>
+            </div>
+            
+            <div class="stats-grid mb-3">
+              <div class="stat-box">
+                <div class="stat-value">${statsData.data.total}</div>
+                <div class="stat-label">Total</div>
+              </div>
+              <div class="stat-box active">
+                <div class="stat-value">${statsData.data.active}</div>
+                <div class="stat-label">Active</div>
+              </div>
+              <div class="stat-box inactive">
+                <div class="stat-value">${statsData.data.inactive}</div>
+                <div class="stat-label">Inactive</div>
+              </div>
+            </div>
+            
+            <button class="btn btn-sm btn-primary w-100 view-details">View Details</button>
+          </div>
+        `;
         // Create marker
         const marker = L.marker([municipalityData.lat, municipalityData.long], {
           icon: L.divIcon({
