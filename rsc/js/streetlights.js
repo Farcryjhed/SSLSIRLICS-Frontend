@@ -26,6 +26,14 @@ class StreetlightMap {
     // Manage tile cache periodically
     this.manageTileCache();
     setInterval(() => this.manageTileCache(), 3600000); // Clean cache every hour
+
+    // Start periodic statistics updates
+    this.updateStatistics();
+    setInterval(() => this.updateStatistics(), 60000); // Update every minute
+
+    // Manage tile cache periodically
+    this.manageTileCache();
+    setInterval(() => this.manageTileCache(), 3600000); // Clean cache every hour
   }
 
   setupMap() {
@@ -879,8 +887,7 @@ class StreetlightMap {
       console.error("Error showing barangay markers:", error);
     }
   }
-
-  handleZoom() {
+handleZoom() {
     try {
       const zoom = this.map.getZoom();
 
@@ -2944,8 +2951,49 @@ class StreetlightMap {
           },
         });
       });
-    });
+  });
   }
+
+  updateBatteryIcon(batteryLevel, batteryCurrent) {
+    const iconElement = document.getElementById("battery-icon");
+    if (!iconElement) return;
+
+    // Remove existing classes
+    iconElement.className = "fas battery-icon-animated";
+
+    // Add battery level icon and color class
+    let batteryIcon = "";
+    let colorClass = "";
+
+    if (batteryLevel <= 20) {
+      batteryIcon = "fa-battery-empty";
+      colorClass = "battery-critical";
+    } else if (batteryLevel <= 40) {
+      batteryIcon = "fa-battery-quarter";
+      colorClass = "battery-low";
+    } else if (batteryLevel <= 60) {
+      batteryIcon = "fa-battery-half";
+      colorClass = "battery-medium";
+    } else if (batteryLevel <= 80) {
+      batteryIcon = "fa-battery-three-quarters";
+      colorClass = "battery-high";
+    } else {
+      batteryIcon = "fa-battery-full";
+      colorClass = "battery-high";
+    }
+
+    // Add charging/discharging indicator
+    const chargingClass =
+      batteryCurrent > 0
+        ? "battery-charging"
+        : batteryCurrent < 0
+        ? "battery-discharging"
+        : "";
+
+    iconElement.classList.add(batteryIcon, colorClass, chargingClass);
+  }
+}
+
 } // End of StreetlightMap class
 
 layer.on({
