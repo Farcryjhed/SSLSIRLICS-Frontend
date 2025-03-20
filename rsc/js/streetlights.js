@@ -26,14 +26,6 @@ class StreetlightMap {
     // Manage tile cache periodically
     this.manageTileCache();
     setInterval(() => this.manageTileCache(), 3600000); // Clean cache every hour
-
-    // Start periodic statistics updates
-    this.updateStatistics();
-    setInterval(() => this.updateStatistics(), 60000); // Update every minute
-
-    // Manage tile cache periodically
-    this.manageTileCache();
-    setInterval(() => this.manageTileCache(), 3600000); // Clean cache every hour
   }
 
   setupMap() {
@@ -664,7 +656,6 @@ class StreetlightMap {
   async showMunicipalityMarkers(province) {
     this.municipalityMarkers.clearLayers();
     // console.log("Showing municipality markers for province:", province);
-    // console.log("Showing municipality markers for province:", province);
 
     try {
       // Get municipality data from coordinates
@@ -697,66 +688,7 @@ class StreetlightMap {
         if (statsData.status !== "success" || statsData.data.total === 0) {
           continue;
         }
-      // Add markers for municipalities that have matching codes
-      for (const municipalityName in provinceData.municipalities) {
-        const municipalityData = provinceData.municipalities[municipalityName];
 
-        // Skip if no valid coordinates or municipality code
-        if (
-          !municipalityData.lat ||
-          !municipalityData.long ||
-          !municipalityData.municipality_code
-        ) {
-          console.warn(`Missing data for municipality: ${municipalityName}`);
-          continue;
-        }
-
-        // Get count statistics from API for this municipality
-        const statsResponse = await fetch(
-          `api/endpoints/get_count.php?pattern=${municipalityData.municipality_code}`
-        );
-        const statsData = await statsResponse.json();
-
-        if (statsData.status !== "success" || statsData.data.total === 0) {
-          continue;
-        }
-
-        // Create marker
-        const marker = L.marker([municipalityData.lat, municipalityData.long], {
-          icon: L.divIcon({
-            className: "custom-marker",
-            html: '<i class="fas fa-map-marker-alt text-primary fa-2x"></i>',
-            iconSize: [30, 30],
-            iconAnchor: [15, 30],
-          }),
-        });
-
-        // Modern municipality popup - replace the existing popup content in showMunicipalityMarkers method
-        // Inside your showMunicipalityMarkers method where you create the popupContent
-        const popupContent = `
-          <div class="modern-popup p-3">
-            <div class="popup-header mb-3">
-              <h6 class="fw-bold mb-0 text-center">${municipalityName}</h6>
-            </div>
-            
-            <div class="stats-grid mb-3">
-              <div class="stat-box">
-                <div class="stat-value">${statsData.data.total}</div>
-                <div class="stat-label">Total</div>
-              </div>
-              <div class="stat-box active">
-                <div class="stat-value">${statsData.data.active}</div>
-                <div class="stat-label">Active</div>
-              </div>
-              <div class="stat-box inactive">
-                <div class="stat-value">${statsData.data.inactive}</div>
-                <div class="stat-label">Inactive</div>
-              </div>
-            </div>
-            
-            <button class="btn btn-sm btn-primary w-100 view-details">View Details</button>
-          </div>
-        `;
         // Create marker
         const marker = L.marker([municipalityData.lat, municipalityData.long], {
           icon: L.divIcon({
@@ -947,7 +879,8 @@ class StreetlightMap {
       console.error("Error showing barangay markers:", error);
     }
   }
-handleZoom() {
+
+  handleZoom() {
     try {
       const zoom = this.map.getZoom();
 
@@ -3011,49 +2944,8 @@ handleZoom() {
           },
         });
       });
-  });
+    });
   }
-
-  updateBatteryIcon(batteryLevel, batteryCurrent) {
-    const iconElement = document.getElementById("battery-icon");
-    if (!iconElement) return;
-
-    // Remove existing classes
-    iconElement.className = "fas battery-icon-animated";
-
-    // Add battery level icon and color class
-    let batteryIcon = "";
-    let colorClass = "";
-
-    if (batteryLevel <= 20) {
-      batteryIcon = "fa-battery-empty";
-      colorClass = "battery-critical";
-    } else if (batteryLevel <= 40) {
-      batteryIcon = "fa-battery-quarter";
-      colorClass = "battery-low";
-    } else if (batteryLevel <= 60) {
-      batteryIcon = "fa-battery-half";
-      colorClass = "battery-medium";
-    } else if (batteryLevel <= 80) {
-      batteryIcon = "fa-battery-three-quarters";
-      colorClass = "battery-high";
-    } else {
-      batteryIcon = "fa-battery-full";
-      colorClass = "battery-high";
-    }
-
-    // Add charging/discharging indicator
-    const chargingClass =
-      batteryCurrent > 0
-        ? "battery-charging"
-        : batteryCurrent < 0
-        ? "battery-discharging"
-        : "";
-
-    iconElement.classList.add(batteryIcon, colorClass, chargingClass);
-  }
-}
-
 } // End of StreetlightMap class
 
 layer.on({
