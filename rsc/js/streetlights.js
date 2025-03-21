@@ -197,91 +197,96 @@ class StreetlightMap {
 
               layer.on({
                 mouseover: (e) => {
-                  if (!isMobile && !layer.isClicked) { // Only show hover if not clicked
+                  if (!isMobile && !layer.isClicked) {
+                    // Only show hover if not clicked
                     layer.setStyle({
-                      color: '#1671cb', // Lighter blue for hover
+                      color: "#1671cb", // Lighter blue for hover
                       weight: 2,
                       fillOpacity: 0.3,
-                      fillColor: '#2196f3'
+                      fillColor: "#2196f3",
                     });
-                    
-                    if (feature.properties && feature.properties.name && !layer.hoverTooltip) {
+
+                    if (
+                      feature.properties &&
+                      feature.properties.name &&
+                      !layer.hoverTooltip
+                    ) {
                       layer.hoverTooltip = L.tooltip({
                         permanent: true,
-                        direction: 'center',
-                        className: 'province-name-tooltip hover-tooltip',
-                        offset: [0, 0]
+                        direction: "center",
+                        className: "province-name-tooltip hover-tooltip",
+                        offset: [0, 0],
                       })
-                      .setContent(feature.properties.name)
-                      .setLatLng(layer.getCenter());
+                        .setContent(feature.properties.name)
+                        .setLatLng(layer.getCenter());
                       layer.hoverTooltip.addTo(this.map);
                     }
                   }
                 },
-                
+
                 mouseout: (e) => {
-                  if (!isMobile && !layer.isClicked) { // Only hide if not clicked
+                  if (!isMobile && !layer.isClicked) {
+                    // Only hide if not clicked
                     layer.setStyle({
-                      color: 'transparent',
+                      color: "transparent",
                       weight: 0,
                       fillOpacity: 0,
-                      fillColor: 'transparent'
+                      fillColor: "transparent",
                     });
-                    
+
                     if (layer.hoverTooltip) {
                       layer.hoverTooltip.remove();
                       layer.hoverTooltip = null;
                     }
                   }
                 },
-                
+
                 click: (e) => {
                   const layer = e.target;
-                  
+
                   if (layer.isClicked) {
                     // Deactivate clicked state
                     layer.isClicked = false;
                     this.activeGeoJsonLayer = null;
-                    
+
                     // Hide layer
                     layer.setStyle({
-                      color: 'transparent',
+                      color: "transparent",
                       weight: 0,
                       fillOpacity: 0,
-                      fillColor: 'transparent'
+                      fillColor: "transparent",
                     });
-                    
+
                     // Remove province name tooltip
                     if (layer.clickTooltip) {
                       layer.clickTooltip.remove();
                       layer.clickTooltip = null;
                     }
-                    
+
                     // Also remove any hover tooltip if it exists
                     if (layer.hoverTooltip) {
                       layer.hoverTooltip.remove();
                       layer.hoverTooltip = null;
                     }
-                    
+
                     // Remove any name tooltip
                     if (layer.nameTooltip) {
                       layer.nameTooltip.remove();
                       layer.nameTooltip = null;
                     }
-                    
                   } else {
                     // Deactivate previous clicked layer
                     if (this.activeGeoJsonLayer) {
                       this.activeGeoJsonLayer.isClicked = false;
-                      
+
                       // Hide previous layer
                       this.activeGeoJsonLayer.setStyle({
-                        color: 'transparent',
+                        color: "transparent",
                         weight: 0,
                         fillOpacity: 0,
-                        fillColor: 'transparent'
+                        fillColor: "transparent",
                       });
-                      
+
                       // Remove all tooltips from previous layer
                       if (this.activeGeoJsonLayer.clickTooltip) {
                         this.activeGeoJsonLayer.clickTooltip.remove();
@@ -296,33 +301,33 @@ class StreetlightMap {
                         this.activeGeoJsonLayer.nameTooltip = null;
                       }
                     }
-                    
+
                     // Activate new layer
                     layer.isClicked = true;
                     this.activeGeoJsonLayer = layer;
-                    
+
                     // Show layer
                     layer.setStyle({
-                      color: '#000000', // Darker blue for clicked state
+                      color: "#000000", // Darker blue for clicked state
                       weight: 3,
                       fillOpacity: 0.5,
-                      fillColor: '#137dd1'
+                      fillColor: "#137dd1",
                     });
-                    
+
                     // Add new tooltip for clicked state
                     if (feature.properties && feature.properties.name) {
                       layer.clickTooltip = L.tooltip({
                         permanent: true,
-                        direction: 'center',
-                        className: 'province-name-tooltip click-tooltip',
-                        offset: [0, 0]
+                        direction: "center",
+                        className: "province-name-tooltip click-tooltip",
+                        offset: [0, 0],
                       })
-                      .setContent(feature.properties.name)
-                      .setLatLng(layer.getCenter());
+                        .setContent(feature.properties.name)
+                        .setLatLng(layer.getCenter());
                       layer.clickTooltip.addTo(this.map);
                     }
                   }
-                }
+                },
               });
             },
           }).addTo(this.geoJsonLayer);
@@ -335,7 +340,6 @@ class StreetlightMap {
     });
   }
 
-  
   async loadCoordinates() {
     try {
       // Show loader
@@ -414,94 +418,102 @@ class StreetlightMap {
 
   async addProvinceMarkers() {
     try {
-        // Show loading overlay
-        this.toggleLoader(true);
+      // Show loading overlay
+      this.toggleLoader(true);
 
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
 
-        for (const province in this.coordinates) {
-            const data = this.coordinates[province];
+      for (const province in this.coordinates) {
+        const data = this.coordinates[province];
 
-            if (data.lat && data.long && data.municipalities && Object.keys(data.municipalities).length > 0) {
-                const marker = L.marker([data.lat, data.long], {
-                    icon: L.divIcon({
-                        className: "custom-marker",
-                        html: '<i class="fas fa-building text-primary fa-3x"></i>',
-                        iconSize: [40, 40],
-                        iconAnchor: [20, 40],
-                    }),
-                });
+        if (
+          data.lat &&
+          data.long &&
+          data.municipalities &&
+          Object.keys(data.municipalities).length > 0
+        ) {
+          const marker = L.marker([data.lat, data.long], {
+            icon: L.divIcon({
+              className: "custom-marker",
+              html: '<i class="fas fa-building text-primary fa-3x"></i>',
+              iconSize: [40, 40],
+              iconAnchor: [20, 40],
+            }),
+          });
 
-                const popupContent = await this.createProvincePopup({
-                    name: province,
-                    code: data.province_code,
-                });
+          const popupContent = await this.createProvincePopup({
+            name: province,
+            code: data.province_code,
+          });
 
-                marker.bindPopup(popupContent);
+          marker.bindPopup(popupContent);
 
-                const handleMarkerClick = () => {
-                    this.disableAllGeoJsonInteractions(); // Call function instead of manual hiding
-                    this.provinceMarkers.removeLayer(marker);
-                    this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-                    this.showMunicipalityMarkers(province);
-                };
+          const handleMarkerClick = () => {
+            this.disableAllGeoJsonInteractions(); // Call function instead of manual hiding
+            this.provinceMarkers.removeLayer(marker);
+            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+            this.showMunicipalityMarkers(province);
+          };
 
-                if (isMobile) {
-                    marker.on("popupopen", (e) => {
-                        const zoomButton = e.popup._contentNode.querySelector(".zoom-to-province");
-                        if (zoomButton) {
-                            zoomButton.addEventListener("click", handleMarkerClick);
-                        }
-                    });
-                } else {
-                    marker.on("click", handleMarkerClick);
+          if (isMobile) {
+            marker.on("popupopen", (e) => {
+              const zoomButton =
+                e.popup._contentNode.querySelector(".zoom-to-province");
+              if (zoomButton) {
+                zoomButton.addEventListener("click", handleMarkerClick);
+              }
+            });
+          } else {
+            marker.on("click", handleMarkerClick);
 
-                    // Show popup on hover for desktop
-                    const popup = L.popup({ closeButton: false, offset: [0, -20] }).setContent(popupContent);
-                    marker.on("mouseover", () => marker.openPopup());
-                    marker.on("mouseout", () => marker.closePopup());
-                    marker.bindPopup(popup);
-                }
+            // Show popup on hover for desktop
+            const popup = L.popup({
+              closeButton: false,
+              offset: [0, -20],
+            }).setContent(popupContent);
+            marker.on("mouseover", () => marker.openPopup());
+            marker.on("mouseout", () => marker.closePopup());
+            marker.bindPopup(popup);
+          }
 
-                this.provinceMarkers.addLayer(marker);
-            }
+          this.provinceMarkers.addLayer(marker);
         }
+      }
 
-        // Hide loading overlay after all markers are added
-        this.toggleLoader(false);
+      // Hide loading overlay after all markers are added
+      this.toggleLoader(false);
     } catch (error) {
-        console.error("Error adding province markers:", error);
-        this.toggleLoader(false);
+      console.error("Error adding province markers:", error);
+      this.toggleLoader(false);
     }
-}
+  }
 
-// Toggle loading overlay
-toggleLoader(show) {
+  // Toggle loading overlay
+  toggleLoader(show) {
     const loader = document.querySelector(".loading-overlay");
     if (loader) {
-        loader.style.display = show ? "flex" : "none";
+      loader.style.display = show ? "flex" : "none";
     }
-}
+  }
 
-
-// Toggle loading overlay
-toggleLoader(show) {
+  // Toggle loading overlay
+  toggleLoader(show) {
     const loader = document.querySelector(".loading-overlay");
     if (loader) {
-        loader.style.display = show ? "flex" : "none";
+      loader.style.display = show ? "flex" : "none";
     }
-}
+  }
 
-
-
-// Toggle loading overlay
-toggleLoader(show) {
+  // Toggle loading overlay
+  toggleLoader(show) {
     const loader = document.querySelector(".loading-overlay");
     if (loader) {
-        loader.style.display = show ? "flex" : "none";
+      loader.style.display = show ? "flex" : "none";
     }
-}
-
+  }
 
   // Add this new method to show/hide loader
   toggleLoader(show) {
@@ -868,86 +880,89 @@ toggleLoader(show) {
     }
   }
 
-handleZoom() {
+  handleZoom() {
     try {
-        const zoom = this.map.getZoom();
+      const zoom = this.map.getZoom();
 
-        if (zoom < 9 || zoom < this.zoomLevels.city) {
-            // Clear other layers
-            this.municipalityMarkers.clearLayers();
-            this.barangayMarkers.clearLayers();
-            this.provinceMarkers.clearLayers();
+      if (zoom < 9 || zoom < this.zoomLevels.city) {
+        // Clear other layers
+        this.municipalityMarkers.clearLayers();
+        this.barangayMarkers.clearLayers();
+        this.provinceMarkers.clearLayers();
 
-            // Enable GeoJSON interactions after zooming out
-            this.enableAllGeoJsonInteractions();
+        // Enable GeoJSON interactions after zooming out
+        this.enableAllGeoJsonInteractions();
 
-            this.activeGeoJsonLayer = null; // Track currently active layer
+        this.activeGeoJsonLayer = null; // Track currently active layer
 
-            Object.entries(this.coordinates).forEach(([province, data]) => {
-                if (data.lat && data.long && data.municipalities && 
-                    Object.keys(data.municipalities).length > 0) {
-
-                    const marker = L.marker([data.lat, data.long], {
-                        icon: L.divIcon({
-                            className: "custom-marker",
-                            html: '<i class="fas fa-building text-primary fa-3x" style="pointer-events: none;"></i>',
-                            iconSize: [40, 40],
-                            iconAnchor: [20, 40],
-                        }),
-                        province: province
-                    });
-
-                    this.createProvincePopup({
-                        name: province,
-                        code: data.province_code
-                    }).then(popupContent => {
-                        const popup = L.popup({
-                            closeButton: false,
-                            offset: [0, -20],
-                        }).setContent(popupContent);
-
-                        marker.bindPopup(popup);
-                    });
-
-                    marker.on("mouseover", function () {
-                        this.openPopup();
-                        this.setZIndexOffset(1000);
-                    });
-                    marker.on("mouseout", function () {
-                        this.closePopup();
-                        this.setZIndexOffset(0);
-                    });
-
-                    marker.on("click", () => {
-                        this.disableAllGeoJsonInteractions(); // Disable when clicking the icon
-                        this.provinceMarkers.removeLayer(marker);
-                        this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-                        this.showMunicipalityMarkers(province);
-                    });
-
-                    this.provinceMarkers.addLayer(marker);
-                }
+        Object.entries(this.coordinates).forEach(([province, data]) => {
+          if (
+            data.lat &&
+            data.long &&
+            data.municipalities &&
+            Object.keys(data.municipalities).length > 0
+          ) {
+            const marker = L.marker([data.lat, data.long], {
+              icon: L.divIcon({
+                className: "custom-marker",
+                html: '<i class="fas fa-building text-primary fa-3x" style="pointer-events: none;"></i>',
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+              }),
+              province: province,
             });
 
-            if (!this.map.hasLayer(this.provinceMarkers)) {
-                this.provinceMarkers.addTo(this.map);
-            }
+            this.createProvincePopup({
+              name: province,
+              code: data.province_code,
+            }).then((popupContent) => {
+              const popup = L.popup({
+                closeButton: false,
+                offset: [0, -20],
+              }).setContent(popupContent);
 
-            // Load and display GeoJSON files with the correct functionality
-                Object.entries(geoJsonFiles).forEach(([regionCode, fileName]) => {
-                  fetch(`rsc/geojson/${fileName}`)
-                    .then((response) => {
-                      if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                      }
-                      return response.json();
-                    })
-                    .then((data) => {
-                      // Add custom CSS styles
-                      if (!document.getElementById("geojson-styles")) {
-                        const style = document.createElement("style");
-                        style.id = "geojson-styles";
-                        style.textContent = `
+              marker.bindPopup(popup);
+            });
+
+            marker.on("mouseover", function () {
+              this.openPopup();
+              this.setZIndexOffset(1000);
+            });
+            marker.on("mouseout", function () {
+              this.closePopup();
+              this.setZIndexOffset(0);
+            });
+
+            marker.on("click", () => {
+              this.disableAllGeoJsonInteractions(); // Disable when clicking the icon
+              this.provinceMarkers.removeLayer(marker);
+              this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+              this.showMunicipalityMarkers(province);
+            });
+
+            this.provinceMarkers.addLayer(marker);
+          }
+        });
+
+        if (!this.map.hasLayer(this.provinceMarkers)) {
+          this.provinceMarkers.addTo(this.map);
+        }
+
+        // Load and display GeoJSON files with the correct functionality
+        Object.entries(geoJsonFiles).forEach(([regionCode, fileName]) => {
+          fetch(`rsc/geojson/${fileName}`)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((data) => {
+              // Add custom CSS styles
+              if (!document.getElementById("geojson-styles")) {
+                const style = document.createElement("style");
+                style.id = "geojson-styles";
+                style.textContent = `
                           .leaflet-interactive {
                             outline: none !important;
                           }
@@ -968,243 +983,249 @@ handleZoom() {
                             transition: opacity 0.3s;
                           }
                         `;
-                        document.head.appendChild(style);
-                      }
+                document.head.appendChild(style);
+              }
 
-                      // Create GeoJSON layer
-                      this.geoJsonLayers[regionCode] = L.geoJSON(data, {
-                        style: (feature) => ({
+              // Create GeoJSON layer
+              this.geoJsonLayers[regionCode] = L.geoJSON(data, {
+                style: (feature) => ({
+                  color: "transparent",
+                  weight: 0,
+                  fillOpacity: 0,
+                  fillColor: "transparent",
+                  className: "geojson-path",
+                  smoothFactor: 1.5,
+                  interactive: true,
+                  bubblingMouseEvents: false,
+                }),
+                onEachFeature: (feature, layer) => {
+                  const isMobile =
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                      navigator.userAgent
+                    );
+
+                  // Track layer state
+                  layer.isVisible = false;
+                  layer.nameTooltip = null;
+
+                  const showLayer = () => {
+                    layer.isVisible = true;
+                    layer.setStyle({
+                      color: "#1671cb",
+                      weight: 3,
+                      fillOpacity: 0.5,
+                      fillColor: "#2196f3",
+                    });
+                    layer.bringToFront();
+
+                    if (
+                      feature.properties &&
+                      feature.properties.name &&
+                      !layer.nameTooltip
+                    ) {
+                      layer.nameTooltip = L.tooltip({
+                        permanent: true,
+                        direction: "center",
+                        className: "province-name-tooltip",
+                        offset: [0, 0],
+                      })
+                        .setContent(feature.properties.name)
+                        .setLatLng(layer.getCenter());
+                      layer.nameTooltip.addTo(this.map);
+                    }
+                  };
+
+                  const hideLayer = () => {
+                    layer.isVisible = false;
+                    layer.setStyle({
+                      color: "transparent",
+                      weight: 0,
+                      fillOpacity: 0,
+                      fillColor: "transparent",
+                    });
+                    if (layer.nameTooltip) {
+                      layer.nameTooltip.remove();
+                      layer.nameTooltip = null;
+                    }
+                  };
+
+                  layer.on({
+                    mouseover: (e) => {
+                      if (!isMobile && !layer.isClicked) {
+                        // Only show hover if not clicked
+                        layer.setStyle({
+                          color: "#1671cb", // Lighter blue for hover
+                          weight: 2,
+                          fillOpacity: 0.3,
+                          fillColor: "#2196f3",
+                        });
+
+                        if (
+                          feature.properties &&
+                          feature.properties.name &&
+                          !layer.hoverTooltip
+                        ) {
+                          layer.hoverTooltip = L.tooltip({
+                            permanent: true,
+                            direction: "center",
+                            className: "province-name-tooltip hover-tooltip",
+                            offset: [0, 0],
+                          })
+                            .setContent(feature.properties.name)
+                            .setLatLng(layer.getCenter());
+                          layer.hoverTooltip.addTo(this.map);
+                        }
+                      }
+                    },
+
+                    mouseout: (e) => {
+                      if (!isMobile && !layer.isClicked) {
+                        // Only hide if not clicked
+                        layer.setStyle({
                           color: "transparent",
                           weight: 0,
                           fillOpacity: 0,
                           fillColor: "transparent",
-                          className: "geojson-path",
-                          smoothFactor: 1.5,
-                          interactive: true,
-                          bubblingMouseEvents: false,
-                        }),
-                        onEachFeature: (feature, layer) => {
-                          const isMobile =
-                            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-                              navigator.userAgent
-                            );
+                        });
 
-                          // Track layer state
-                          layer.isVisible = false;
+                        if (layer.hoverTooltip) {
+                          layer.hoverTooltip.remove();
+                          layer.hoverTooltip = null;
+                        }
+                      }
+                    },
+
+                    click: (e) => {
+                      const layer = e.target;
+
+                      if (layer.isClicked) {
+                        // Deactivate clicked state
+                        layer.isClicked = false;
+                        this.activeGeoJsonLayer = null;
+
+                        // Hide layer
+                        layer.setStyle({
+                          color: "transparent",
+                          weight: 0,
+                          fillOpacity: 0,
+                          fillColor: "transparent",
+                        });
+
+                        // Remove province name tooltip
+                        if (layer.clickTooltip) {
+                          layer.clickTooltip.remove();
+                          layer.clickTooltip = null;
+                        }
+
+                        // Also remove any hover tooltip if it exists
+                        if (layer.hoverTooltip) {
+                          layer.hoverTooltip.remove();
+                          layer.hoverTooltip = null;
+                        }
+
+                        // Remove any name tooltip
+                        if (layer.nameTooltip) {
+                          layer.nameTooltip.remove();
                           layer.nameTooltip = null;
+                        }
+                      } else {
+                        // Deactivate previous clicked layer
+                        if (this.activeGeoJsonLayer) {
+                          this.activeGeoJsonLayer.isClicked = false;
 
-                          const showLayer = () => {
-                            layer.isVisible = true;
-                            layer.setStyle({
-                              color: "#1671cb",
-                              weight: 3,
-                              fillOpacity: 0.5,
-                              fillColor: "#2196f3",
-                            });
-                            layer.bringToFront();
-
-                            if (
-                              feature.properties &&
-                              feature.properties.name &&
-                              !layer.nameTooltip
-                            ) {
-                              layer.nameTooltip = L.tooltip({
-                                permanent: true,
-                                direction: "center",
-                                className: "province-name-tooltip",
-                                offset: [0, 0],
-                              })
-                                .setContent(feature.properties.name)
-                                .setLatLng(layer.getCenter());
-                              layer.nameTooltip.addTo(this.map);
-                            }
-                          };
-
-                          const hideLayer = () => {
-                            layer.isVisible = false;
-                            layer.setStyle({
-                              color: "transparent",
-                              weight: 0,
-                              fillOpacity: 0,
-                              fillColor: "transparent",
-                            });
-                            if (layer.nameTooltip) {
-                              layer.nameTooltip.remove();
-                              layer.nameTooltip = null;
-                            }
-                          };
-
-                          layer.on({
-                            mouseover: (e) => {
-                              if (!isMobile && !layer.isClicked) { // Only show hover if not clicked
-                                layer.setStyle({
-                                  color: '#1671cb', // Lighter blue for hover
-                                  weight: 2,
-                                  fillOpacity: 0.3,
-                                  fillColor: '#2196f3'
-                                });
-                                
-                                if (feature.properties && feature.properties.name && !layer.hoverTooltip) {
-                                  layer.hoverTooltip = L.tooltip({
-                                    permanent: true,
-                                    direction: 'center',
-                                    className: 'province-name-tooltip hover-tooltip',
-                                    offset: [0, 0]
-                                  })
-                                  .setContent(feature.properties.name)
-                                  .setLatLng(layer.getCenter());
-                                  layer.hoverTooltip.addTo(this.map);
-                                }
-                              }
-                            },
-                            
-                            mouseout: (e) => {
-                              if (!isMobile && !layer.isClicked) { // Only hide if not clicked
-                                layer.setStyle({
-                                  color: 'transparent',
-                                  weight: 0,
-                                  fillOpacity: 0,
-                                  fillColor: 'transparent'
-                                });
-                                
-                                if (layer.hoverTooltip) {
-                                  layer.hoverTooltip.remove();
-                                  layer.hoverTooltip = null;
-                                }
-                              }
-                            },
-                            
-                            click: (e) => {
-                              const layer = e.target;
-                              
-                              if (layer.isClicked) {
-                                // Deactivate clicked state
-                                layer.isClicked = false;
-                                this.activeGeoJsonLayer = null;
-                                
-                                // Hide layer
-                                layer.setStyle({
-                                  color: 'transparent',
-                                  weight: 0,
-                                  fillOpacity: 0,
-                                  fillColor: 'transparent'
-                                });
-                                
-                                // Remove province name tooltip
-                                if (layer.clickTooltip) {
-                                  layer.clickTooltip.remove();
-                                  layer.clickTooltip = null;
-                                }
-                                
-                                // Also remove any hover tooltip if it exists
-                                if (layer.hoverTooltip) {
-                                  layer.hoverTooltip.remove();
-                                  layer.hoverTooltip = null;
-                                }
-                                
-                                // Remove any name tooltip
-                                if (layer.nameTooltip) {
-                                  layer.nameTooltip.remove();
-                                  layer.nameTooltip = null;
-                                }
-                                
-                              } else {
-                                // Deactivate previous clicked layer
-                                if (this.activeGeoJsonLayer) {
-                                  this.activeGeoJsonLayer.isClicked = false;
-                                  
-                                  // Hide previous layer
-                                  this.activeGeoJsonLayer.setStyle({
-                                    color: 'transparent',
-                                    weight: 0,
-                                    fillOpacity: 0,
-                                    fillColor: 'transparent'
-                                  });
-                                  
-                                  // Remove all tooltips from previous layer
-                                  if (this.activeGeoJsonLayer.clickTooltip) {
-                                    this.activeGeoJsonLayer.clickTooltip.remove();
-                                    this.activeGeoJsonLayer.clickTooltip = null;
-                                  }
-                                  if (this.activeGeoJsonLayer.hoverTooltip) {
-                                    this.activeGeoJsonLayer.hoverTooltip.remove();
-                                    this.activeGeoJsonLayer.hoverTooltip = null;
-                                  }
-                                  if (this.activeGeoJsonLayer.nameTooltip) {
-                                    this.activeGeoJsonLayer.nameTooltip.remove();
-                                    this.activeGeoJsonLayer.nameTooltip = null;
-                                  }
-                                }
-                                
-                                // Activate new layer
-                                layer.isClicked = true;
-                                this.activeGeoJsonLayer = layer;
-                                
-                                // Show layer
-                                layer.setStyle({
-                                  color: '#000000', // Darker blue for clicked state
-                                  weight: 3,
-                                  fillOpacity: 0.5,
-                                  fillColor: '#137dd1'
-                                });
-                                
-                                // Add new tooltip for clicked state
-                                if (feature.properties && feature.properties.name) {
-                                  layer.clickTooltip = L.tooltip({
-                                    permanent: true,
-                                    direction: 'center',
-                                    className: 'province-name-tooltip click-tooltip',
-                                    offset: [0, 0]
-                                  })
-                                  .setContent(feature.properties.name)
-                                  .setLatLng(layer.getCenter());
-                                  layer.clickTooltip.addTo(this.map);
-                                }
-                              }
-                            }
+                          // Hide previous layer
+                          this.activeGeoJsonLayer.setStyle({
+                            color: "transparent",
+                            weight: 0,
+                            fillOpacity: 0,
+                            fillColor: "transparent",
                           });
-                        },
-                      }).addTo(this.geoJsonLayer);
 
-                      // console.log(`Successfully loaded GeoJSON for ${regionCode}`);
-                    })
-                    .catch((error) => {
-                      console.error(`Error loading GeoJSON for ${regionCode}:`, error);
-                    });
-                });
+                          // Remove all tooltips from previous layer
+                          if (this.activeGeoJsonLayer.clickTooltip) {
+                            this.activeGeoJsonLayer.clickTooltip.remove();
+                            this.activeGeoJsonLayer.clickTooltip = null;
+                          }
+                          if (this.activeGeoJsonLayer.hoverTooltip) {
+                            this.activeGeoJsonLayer.hoverTooltip.remove();
+                            this.activeGeoJsonLayer.hoverTooltip = null;
+                          }
+                          if (this.activeGeoJsonLayer.nameTooltip) {
+                            this.activeGeoJsonLayer.nameTooltip.remove();
+                            this.activeGeoJsonLayer.nameTooltip = null;
+                          }
+                        }
 
-        } else if (zoom < this.zoomLevels.municipality) {
-            this.map.removeLayer(this.provinceMarkers);
-            this.municipalityMarkers.addTo(this.map);
-            this.map.removeLayer(this.barangayMarkers);
-        } else {
-            this.map.removeLayer(this.provinceMarkers);
-            this.map.removeLayer(this.municipalityMarkers);
-            this.barangayMarkers.addTo(this.map);
-        }
+                        // Activate new layer
+                        layer.isClicked = true;
+                        this.activeGeoJsonLayer = layer;
 
-        this.activeProvince = null;
+                        // Show layer
+                        layer.setStyle({
+                          color: "#000000", // Darker blue for clicked state
+                          weight: 3,
+                          fillOpacity: 0.5,
+                          fillColor: "#137dd1",
+                        });
+
+                        // Add new tooltip for clicked state
+                        if (feature.properties && feature.properties.name) {
+                          layer.clickTooltip = L.tooltip({
+                            permanent: true,
+                            direction: "center",
+                            className: "province-name-tooltip click-tooltip",
+                            offset: [0, 0],
+                          })
+                            .setContent(feature.properties.name)
+                            .setLatLng(layer.getCenter());
+                          layer.clickTooltip.addTo(this.map);
+                        }
+                      }
+                    },
+                  });
+                },
+              }).addTo(this.geoJsonLayer);
+
+              // console.log(`Successfully loaded GeoJSON for ${regionCode}`);
+            })
+            .catch((error) => {
+              console.error(`Error loading GeoJSON for ${regionCode}:`, error);
+            });
+        });
+      } else if (zoom < this.zoomLevels.municipality) {
+        this.map.removeLayer(this.provinceMarkers);
+        this.municipalityMarkers.addTo(this.map);
+        this.map.removeLayer(this.barangayMarkers);
+      } else {
+        this.map.removeLayer(this.provinceMarkers);
+        this.map.removeLayer(this.municipalityMarkers);
+        this.barangayMarkers.addTo(this.map);
+      }
+
+      this.activeProvince = null;
     } catch (error) {
-        console.error('Error in handleZoom:', error);
+      console.error("Error in handleZoom:", error);
     }
-}
-
-
+  }
 
   // Helper method to store initial province markers
   storeInitialProvinceMarkers() {
     this.storedProvinceMarkers = new Map();
     Object.entries(this.coordinates).forEach(([province, data]) => {
-      if (data.lat && data.long && data.municipalities &&
-          Object.keys(data.municipalities).length > 0) {
+      if (
+        data.lat &&
+        data.long &&
+        data.municipalities &&
+        Object.keys(data.municipalities).length > 0
+      ) {
         const marker = L.marker([data.lat, data.long], {
           icon: L.divIcon({
-            className: "custom-marker", 
+            className: "custom-marker",
             html: '<i class="fas fa-building text-primary fa-3x"></i>',
             iconSize: [40, 40],
             iconAnchor: [20, 40],
           }),
-          province: province
+          province: province,
         });
         this.storedProvinceMarkers.set(province, marker);
       }
@@ -2774,11 +2795,11 @@ handleZoom() {
   async manageTileCache() {
     try {
       const tilesCacheStorage = localforage.createInstance({
-        name: "map-tiles"
+        name: "map-tiles",
       });
-  
+
       const keys = await tilesCacheStorage.keys();
-  
+
       if (keys.length > 800) {
         // Remove the oldest tiles (first 200)
         const tilesToRemove = keys.slice(0, 200);
@@ -2792,224 +2813,233 @@ handleZoom() {
     }
   } // End of manageTileCache method
 
+  disableAllGeoJsonInteractions() {
+    // Store original styles before disabling
+    this.originalGeoJsonStyles = {};
 
-
-disableAllGeoJsonInteractions() {
-  // Store original styles before disabling
-  this.originalGeoJsonStyles = {};
-
-  Object.values(this.geoJsonLayers).forEach((layer) => {
+    Object.values(this.geoJsonLayers).forEach((layer) => {
       layer.eachLayer((sublayer) => {
-          // Save original styles
-          this.originalGeoJsonStyles[sublayer._leaflet_id] = {
-              color: sublayer.options.color,
-              weight: sublayer.options.weight,
-              fillOpacity: sublayer.options.fillOpacity,
-              fillColor: sublayer.options.fillColor,
-              interactive: sublayer.options.interactive,
-          };
+        // Save original styles
+        this.originalGeoJsonStyles[sublayer._leaflet_id] = {
+          color: sublayer.options.color,
+          weight: sublayer.options.weight,
+          fillOpacity: sublayer.options.fillOpacity,
+          fillColor: sublayer.options.fillColor,
+          interactive: sublayer.options.interactive,
+        };
 
-          // Disable interactions and hide the layer
-          sublayer.setStyle({
+        // Disable interactions and hide the layer
+        sublayer.setStyle({
+          color: "transparent",
+          weight: 0,
+          fillOpacity: 0,
+          fillColor: "transparent",
+        });
+
+        // Remove province name tooltips
+        if (sublayer.nameTooltip) {
+          sublayer.nameTooltip.remove();
+          sublayer.nameTooltip = null;
+        }
+        if (sublayer.hoverTooltip) {
+          sublayer.hoverTooltip.remove();
+          sublayer.hoverTooltip = null;
+        }
+        if (sublayer.clickTooltip) {
+          sublayer.clickTooltip.remove();
+          sublayer.clickTooltip = null;
+        }
+
+        // Disable interactivity
+        sublayer.off("mouseover mouseout click");
+        sublayer.options.interactive = false;
+      });
+
+      layer.isVisible = false;
+    });
+
+    this.activeGeoJsonLayer = null;
+    this.isGeoJsonHovered = false;
+  }
+
+  enableAllGeoJsonInteractions() {
+    Object.values(this.geoJsonLayers).forEach((layer) => {
+      layer.eachLayer((sublayer) => {
+        // Ensure interactivity is only triggered on hover or click
+        sublayer.options.interactive = true;
+
+        sublayer.on({
+          mouseover: () => {
+            sublayer.setStyle({
+              color: "#1671cb",
+              weight: 2,
+              fillOpacity: 0.3,
+              fillColor: "#2196f3",
+            });
+
+            if (
+              feature.properties &&
+              feature.properties.name &&
+              !sublayer.hoverTooltip
+            ) {
+              sublayer.hoverTooltip = L.tooltip({
+                permanent: true,
+                direction: "center",
+                className: "province-name-tooltip hover-tooltip",
+                offset: [0, 0],
+              })
+                .setContent(feature.properties.name)
+                .setLatLng(sublayer.getCenter());
+              sublayer.hoverTooltip.addTo(this.map);
+            }
+
+            //- not check -/
+            if (!sublayer.nameTooltip) {
+              sublayer.nameTooltip = L.tooltip({
+                permanent: true,
+                direction: "center",
+                className: "province-name-tooltip",
+                offset: [0, 0],
+              })
+                .setContent(sublayer.feature.properties.name)
+                .setLatLng(sublayer.getCenter());
+
+              sublayer.nameTooltip.addTo(this.map);
+            }
+            //- not check -/
+          },
+          mouseout: () => {
+            sublayer.setStyle({
               color: "transparent",
               weight: 0,
               fillOpacity: 0,
               fillColor: "transparent",
-          });
+            });
 
-          // Remove province name tooltips
-          if (sublayer.nameTooltip) {
+            if (sublayer.nameTooltip) {
               sublayer.nameTooltip.remove();
               sublayer.nameTooltip = null;
-          }
-          if (sublayer.hoverTooltip) {
-              sublayer.hoverTooltip.remove();
-              sublayer.hoverTooltip = null;
-          }
-          if (sublayer.clickTooltip) {
-              sublayer.clickTooltip.remove();
-              sublayer.clickTooltip = null;
-          }
+            }
+          },
+          click: () => {
+            sublayer.setStyle({
+              color: "#000000",
+              weight: 3,
+              fillOpacity: 0.5,
+              fillColor: "#137dd1",
+            });
 
-          // Disable interactivity
-          sublayer.off("mouseover mouseout click");
-          sublayer.options.interactive = false;
+            if (!sublayer.clickTooltip) {
+              sublayer.clickTooltip = L.tooltip({
+                permanent: true,
+                direction: "center",
+                className: "province-name-tooltip click-tooltip",
+                offset: [0, 0],
+              })
+                .setContent(sublayer.feature.properties.name)
+                .setLatLng(sublayer.getCenter());
+
+              sublayer.clickTooltip.addTo(this.map);
+            }
+          },
+        });
       });
-
-      layer.isVisible = false;
-  });
-
-  this.activeGeoJsonLayer = null;
-  this.isGeoJsonHovered = false;
-}
-
-enableAllGeoJsonInteractions() {
-  Object.values(this.geoJsonLayers).forEach((layer) => {
-      layer.eachLayer((sublayer) => {
-          // Ensure interactivity is only triggered on hover or click
-          sublayer.options.interactive = true;
-
-          sublayer.on({
-              mouseover: () => {
-                  sublayer.setStyle({
-                      color: "#1671cb",
-                      weight: 2,
-                      fillOpacity: 0.3,
-                      fillColor: "#2196f3",
-                  });
-
-                  if (feature.properties && feature.properties.name && !sublayer.hoverTooltip) {
-                    sublayer.hoverTooltip = L.tooltip({
-                      permanent: true,
-                      direction: 'center',
-                      className: 'province-name-tooltip hover-tooltip',
-                      offset: [0, 0]
-                    })
-                    .setContent(feature.properties.name)
-                    .setLatLng(sublayer.getCenter());
-                    sublayer.hoverTooltip.addTo(this.map);
-                  }
-
-                  //- not check -/
-                  if (!sublayer.nameTooltip) {
-                      sublayer.nameTooltip = L.tooltip({
-                          permanent: true,
-                          direction: "center",
-                          className: "province-name-tooltip",
-                          offset: [0, 0],
-                      }).setContent(sublayer.feature.properties.name).setLatLng(sublayer.getCenter());
-
-                      sublayer.nameTooltip.addTo(this.map);
-                  }
-                  //- not check -/
-              },
-              mouseout: () => {
-                  sublayer.setStyle({
-                      color: "transparent",
-                      weight: 0,
-                      fillOpacity: 0,
-                      fillColor: "transparent",
-                  });
-
-                  if (sublayer.nameTooltip) {
-                      sublayer.nameTooltip.remove();
-                      sublayer.nameTooltip = null;
-                  }
-              },
-              click: () => {
-                  sublayer.setStyle({
-                      color: "#000000",
-                      weight: 3,
-                      fillOpacity: 0.5,
-                      fillColor: "#137dd1",
-                  });
-
-                  if (!sublayer.clickTooltip) {
-                      sublayer.clickTooltip = L.tooltip({
-                          permanent: true,
-                          direction: "center",
-                          className: "province-name-tooltip click-tooltip",
-                          offset: [0, 0],
-                      }).setContent(sublayer.feature.properties.name).setLatLng(sublayer.getCenter());
-
-                      sublayer.clickTooltip.addTo(this.map);
-                  }
-              },
-          });
-      });
-  });
-}
-
+    });
+  }
 } // End of StreetlightMap class
-
 
 layer.on({
   mouseover: (e) => {
-    if (!isMobile && !layer.isClicked) { // Only show hover if not clicked
+    if (!isMobile && !layer.isClicked) {
+      // Only show hover if not clicked
       layer.setStyle({
-        color: '#1671cb', // Lighter blue for hover
+        color: "#1671cb", // Lighter blue for hover
         weight: 2,
         fillOpacity: 0.3,
-        fillColor: '#2196f3'
+        fillColor: "#2196f3",
       });
-      
-      if (feature.properties && feature.properties.name && !layer.hoverTooltip) {
+
+      if (
+        feature.properties &&
+        feature.properties.name &&
+        !layer.hoverTooltip
+      ) {
         layer.hoverTooltip = L.tooltip({
           permanent: true,
-          direction: 'center',
-          className: 'province-name-tooltip hover-tooltip',
-          offset: [0, 0]
+          direction: "center",
+          className: "province-name-tooltip hover-tooltip",
+          offset: [0, 0],
         })
-        .setContent(feature.properties.name)
-        .setLatLng(layer.getCenter());
+          .setContent(feature.properties.name)
+          .setLatLng(layer.getCenter());
         layer.hoverTooltip.addTo(this.map);
       }
     }
   },
-  
+
   mouseout: (e) => {
-    if (!isMobile && !layer.isClicked) { // Only hide if not clicked
+    if (!isMobile && !layer.isClicked) {
+      // Only hide if not clicked
       layer.setStyle({
-        color: 'transparent',
+        color: "transparent",
         weight: 0,
         fillOpacity: 0,
-        fillColor: 'transparent'
+        fillColor: "transparent",
       });
-      
+
       if (layer.hoverTooltip) {
         layer.hoverTooltip.remove();
         layer.hoverTooltip = null;
       }
     }
   },
-  
+
   click: (e) => {
     const layer = e.target;
-    
+
     if (layer.isClicked) {
       // Deactivate clicked state
       layer.isClicked = false;
       this.activeGeoJsonLayer = null;
-      
+
       // Hide layer
       layer.setStyle({
-        color: 'transparent',
+        color: "transparent",
         weight: 0,
         fillOpacity: 0,
-        fillColor: 'transparent'
+        fillColor: "transparent",
       });
-      
+
       // Remove province name tooltip
       if (layer.clickTooltip) {
         layer.clickTooltip.remove();
         layer.clickTooltip = null;
       }
-      
+
       // Also remove any hover tooltip if it exists
       if (layer.hoverTooltip) {
         layer.hoverTooltip.remove();
         layer.hoverTooltip = null;
       }
-      
+
       // Remove any name tooltip
       if (layer.nameTooltip) {
         layer.nameTooltip.remove();
         layer.nameTooltip = null;
       }
-      
     } else {
       // Deactivate previous clicked layer
       if (this.activeGeoJsonLayer) {
         this.activeGeoJsonLayer.isClicked = false;
-        
+
         // Hide previous layer
         this.activeGeoJsonLayer.setStyle({
-          color: 'transparent',
+          color: "transparent",
           weight: 0,
           fillOpacity: 0,
-          fillColor: 'transparent'
+          fillColor: "transparent",
         });
-        
+
         // Remove all tooltips from previous layer
         if (this.activeGeoJsonLayer.clickTooltip) {
           this.activeGeoJsonLayer.clickTooltip.remove();
@@ -3024,31 +3054,31 @@ layer.on({
           this.activeGeoJsonLayer.nameTooltip = null;
         }
       }
-      
+
       // Activate new layer
       layer.isClicked = true;
       this.activeGeoJsonLayer = layer;
-      
+
       // Show layer
       layer.setStyle({
-        color: '#000000', // Darker blue for clicked state
+        color: "#000000", // Darker blue for clicked state
         weight: 3,
         fillOpacity: 0.5,
-        fillColor: '#137dd1'
+        fillColor: "#137dd1",
       });
-      
+
       // Add new tooltip for clicked state
       if (feature.properties && feature.properties.name) {
         layer.clickTooltip = L.tooltip({
           permanent: true,
-          direction: 'center',
-          className: 'province-name-tooltip click-tooltip',
-          offset: [0, 0]
+          direction: "center",
+          className: "province-name-tooltip click-tooltip",
+          offset: [0, 0],
         })
-        .setContent(feature.properties.name)
-        .setLatLng(layer.getCenter());
+          .setContent(feature.properties.name)
+          .setLatLng(layer.getCenter());
         layer.clickTooltip.addTo(this.map);
       }
     }
-  }
+  },
 });
