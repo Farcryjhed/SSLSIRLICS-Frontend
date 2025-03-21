@@ -200,6 +200,11 @@
     max-height: 45px;
     margin-bottom: 0.5rem;
   }
+  .input-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
   /* Mobile optimization */
   @media (max-width: 768px) {
@@ -244,20 +249,30 @@
 
 
 <!-- Authentication Modal -->
-<div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+ <!-- To show easy to modify ---   <div class="modal show" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
+  <div class="modal" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+   <!-- To hide and clickable ---   <div class="modal" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content mb-5">
+       <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
+       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+       <!-- To hide and clickable ---   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
       <div class="modal-header">
-        <h5 class="modal-title">Login</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h3 class="modal-title">Login</h3>
       </div>
+
       <div class="modal-body">
         <form class="login-form">
-          <div class="mb-3">
+          <div class="mb-3 input-box">
+            <span>
+              <i class="fa-solid fa-envelope"></i>
+            </span>
+
             <label for="name" class="form-label">Name</label>
             <input type="text" class="form-control" id="name" placeholder="Enter your name">
           </div>
           <div class="mb-3">
+            <i class="fa-solid fa-lock"></i>
             <label for="password" class="form-label">Password</label>
             <input type="password" class="form-control" id="password" placeholder="Enter your password">
           </div>
