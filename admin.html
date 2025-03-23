@@ -16,66 +16,144 @@
             background-size: cover;
             min-height: 100vh;  /* Added to ensure full height coverage */
         }
+
+    
+      .search-box {
+                display: flex;
+                align-items: center;
+                background-color: #fff;
+                border-radius: 50px;
+                padding: 0px 20px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+                width: 350px; /* Adjusted from 3300px */
+                height: 50px;
+                transition: left 0.3s ease-in-out;
+            }
+    
+            .search-box input {
+                border: none;
+                background: none;
+                outline: none;
+                width: 100%;
+                font-size: 18px;
+                color: #333;
+                
+            }
+    
+            .search-box i {
+                cursor: pointer;
+                transition: color 0.3s ease;
+            }
+    
+            .search-box i:hover {
+                color: orangered;
+            }
+
+            .custom-card-header {
+                width: 100%; /* Adjust as needed */
+                margin: 0 auto; /* Centers the header */
+                text-align: center; /* Centers the text */
+            }
+
+            .custom-card-body {
+                width: 100%; /* Adjust as needed */
+                margin: 0 auto; /* Centers the body */
+            }
+
+            .container {
+                width: 98%; /* Adjust width (e.g., 90% of screen width) */
+                max-width: 2500px; /* Prevents it from getting too wide */
+                margin: auto; /* Centers it */
+        }
+
+        html, body {
+                height: 100vh;  /* Ensures the body takes full viewport height */
+                overflow: hidden; /* Prevents scrolling on larger screens */
+            }
+
+            /* Allow scrolling only on mobile screens */
+            @media (max-width: 768px) { 
+                html, body {
+                    overflow: auto; /* Enables scrolling on smaller screens */
+                }
+            }
+
+
     </style>
 </head>
 
 
 <body>
-    <div class="container mt-5">
+    <div class="container mt-4">
         <div class="row">
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <div class="card bg-light bg-opacity-75">
                     <div class="card-header">
                         <h4 class="card-title">Add Location</h4>
                     </div>
                     <div class="card-body">
                         <form autocomplete="off" onsubmit="onFormSubmit()">
-                            <div class="mb-3">
-                                <label for="socid" class="form-label">SOCID</label>
+                            <div class="mb-2">
+                                <label for="socid" class="form-label mb-0">SOCID</label>
                                 <input type="text" class="form-control" name="socid" id="socid">
                             </div>
-                            <div class="mb-3">
-                                <label for="province" class="form-label">Province</label>
+                            <div class="mb-2">
+                                <label for="province" class="form-label mb-0">Province</label>
                                 <input type="text" class="form-control" name="province" id="province">
                             </div>
-                            <div class="mb-3">
-                                <label for="municipality" class="form-label">Municipality</label>
+                            <div class="mb-2">
+                                <label for="municipality" class="form-label mb-0">Municipality</label>
                                 <input type="text" class="form-control" name="municipality" id="municipality">
                             </div>
-                            <div class="mb-3">
-                                <label for="barangay" class="form-label">Barangay</label>
+                            <div class="mb-2">
+                                <label for="barangay" class="form-label mb-0">Barangay</label>
                                 <input type="text" class="form-control" name="barangay" id="barangay">
                             </div>
-                            <div class="mb-3">
-                                <label for="lat" class="form-label">Latitude</label>
-                                <input type="number" class="form-control" name="lat" id="lat">
+                            <div class="row mb-2">
+                                <div class="col">
+                                    <label for="lat" class="form-label mb-0">Latitude</label>
+                                    <input type="number" class="form-control" name="lat" id="lat">
+                                </div>
+                                <div class="col">
+                                    <label for="long" class="form-label mb-0">Longitude</label>
+                                    <input type="number" class="form-control" name="long" id="long">
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="long" class="form-label">Longitude</label>
-                                <input type="number" class="form-control" name="long" id="long">
-                            </div>
-                            <div class="mb-3">
-                                <label for="area_descr" class="form-label">Area Descr.</label>
+                            
+                            <div class="mb-2">
+                                <label for="area_descr" class="form-label mb-0">Area Descr.</label>
                                 <input type="text" class="form-control" name="area_descr" id="area_descr">
                             </div>
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary rounded-pill">Submit</button>
-                                <button type="reset" class="btn btn-secondary rounded-pill">Reset</button>
+                            <div class="row mb-2">
+                                <div class="col">
+                                    <button type="submit" class="btn btn-primary rounded-pill w-100">Submit</button>
+                                </div>
+                                <div class="col">
+                                    <button type="reset" class="btn btn-secondary rounded-pill w-100">Reset</button>
+                                </div>
                             </div>
+                            
+                            
+                            <div class="search-box" style="width: 100%;">
+                                <input id="searchInput" class="form-control border-0 shadow-none" type="text" placeholder="Search SOCID..." 
+                                       aria-label="Search" style="border-radius: 20px; padding: 10px; box-shadow: 0px 4px 6px rgba(0,0,0,0.2);">
+                                <i class="fas fa-search fs-5" style="cursor: pointer;" onclick="searchSOCID()"></i>
+                            </div>
+                            
                         </form>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-7">
-                <div class="card bg-light bg-opacity-75">
+            <div class="col-md-8">
+                <div class="card bg-light bg-opacity-75" >
                     <div class="card-header">
                         <h4 class="card-title">Location List</h4>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="storeList">
-                                <thead class="table-light">
+                        <div class="table-responsive" style="max-height: 511px; overflow-y: auto; overflow-x: hidden;">
+                            <table class="table table-hover" id="storeList" style="table-layout: fixed; width: 100%;">
+                                <thead class="table-light" style="position: sticky; top: 0; z-index: 2; white-space: nowrap;">
                                     <tr>
                                         <th>SOCID</th>
                                         <th>Province</th>
@@ -84,6 +162,7 @@
                                         <th>Longitude</th>
                                         <th>Latitude</th>
                                         <th>Area Descr.</th>
+                                        <th style="text-align: center;" >Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -93,6 +172,8 @@
                     </div>
                 </div>
             </div>
+            
+            
         </div>
     </div>
 
