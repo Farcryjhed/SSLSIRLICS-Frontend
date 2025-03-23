@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Crud Operation</title>
+    <link type="text/css" rel="stylesheet" href="rsc/css/admin.css"/>
+    <link rel="stylesheet" href="rsc/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="rsc/bootstrap/css/bootstrap.min.css" />
+    <style>
+        body {  /* Changed from .body to body */
+            background-image: url('rsc/icons/br.png');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+            min-height: 100vh;  /* Added to ensure full height coverage */
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card bg-light bg-opacity-75">
+                    <div class="card-header">
+                        <h4 class="card-title">Add Location</h4>
+                    </div>
+                    <div class="card-body">
+                        <form autocomplete="off" onsubmit="onFormSubmit()">
+                            <div class="mb-3">
+                                <label for="socid" class="form-label">SOCID</label>
+                                <input type="text" class="form-control" name="socid" id="socid">
+                            </div>
+                            <div class="mb-3">
+                                <label for="province" class="form-label">Province</label>
+                                <input type="text" class="form-control" name="province" id="province">
+                            </div>
+                            <div class="mb-3">
+                                <label for="municipality" class="form-label">Municipality</label>
+                                <input type="text" class="form-control" name="municipality" id="municipality">
+                            </div>
+                            <div class="mb-3">
+                                <label for="barangay" class="form-label">Barangay</label>
+                                <input type="text" class="form-control" name="barangay" id="barangay">
+                            </div>
+                            <div class="mb-3">
+                                <label for="lat" class="form-label">Latitude</label>
+                                <input type="number" class="form-control" name="lat" id="lat">
+                            </div>
+                            <div class="mb-3">
+                                <label for="long" class="form-label">Longitude</label>
+                                <input type="number" class="form-control" name="long" id="long">
+                            </div>
+                            <div class="mb-3">
+                                <label for="area_descr" class="form-label">Area Descr.</label>
+                                <input type="text" class="form-control" name="area_descr" id="area_descr">
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary rounded-pill">Submit</button>
+                                <button type="reset" class="btn btn-secondary rounded-pill">Reset</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <div class="card bg-light bg-opacity-75">
+                    <div class="card-header">
+                        <h4 class="card-title">Location List</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="storeList">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>SOCID</th>
+                                        <th>Province</th>
+                                        <th>Municipality</th>
+                                        <th>Barangay</th>
+                                        <th>Longitude</th>
+                                        <th>Latitude</th>
+                                        <th>Area Descr.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="rsc/js/admin.js"></script>
+    <script src="rsc/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
