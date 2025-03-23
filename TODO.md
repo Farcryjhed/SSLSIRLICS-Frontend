@@ -4,9 +4,8 @@ Frontend for SSLSIRLICS
 
 ### Work in Progress (WIP)
 
-[ ] Render only to that specific Municipality
-[ ] UI fixes
-[ ] Cleaning up
+- [ ] Login Page
+  - [ ] Handling login
 
 ### Completed Column ✓
 
@@ -14,3 +13,5 @@ Frontend for SSLSIRLICS
 - [x] An interactive map
 - [x] Rendering of pins for location
   - [x] Json of Municipalities and Barangays
+        [x] Render only to that specific Municipality
+        [X] UI fixes
