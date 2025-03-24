@@ -45,6 +45,20 @@
     max-height: calc(100vh - 3.5rem); /* Prevents modal from being taller than viewport */
   }
 
+  .modal-content-registration {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(15px);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    overflow: hidden; /* Prevents scrolling */
+    height: auto; /* Adjusts height based on content */
+    max-height: calc(100vh - 3.5rem); /* Prevents modal from being taller than viewport */
+  }
+
   .modal-header {
     border-bottom: none;
     text-align: center;
@@ -80,6 +94,13 @@
     gap: 0.75rem;
   }
 
+  
+  .registration-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
   /* Improve form aesthetics */
   .form-check-input:checked {
     background-color: #0d6efd;
@@ -109,6 +130,9 @@
     .modal-content {
       max-width: 100%;
     }
+    .modal-content-registration {
+      max-width: 100%;
+    }
   }
 
   /* Ensure the modal backdrop is slightly visible */
@@ -117,12 +141,6 @@
   }
 
   /* Fixed positioning for top-right buttons */
-  .top-right-buttons {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    z-index: 1060; /* Ensures buttons appear above everything */
-  }
 
   /* Update the navbar and auth buttons styling */
   .navbar {
@@ -183,6 +201,23 @@
     overflow: hidden;
     margin: 0;
     padding: 1.5rem;
+    border-radius: 20px;
+    width: 350px;
+    height: 440px;
+  }
+
+  .modal-content-registration {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(15px);
+    max-height: calc(100vh - 3.5rem);
+    overflow: hidden;
+    margin: 0;
+    padding: 1.5rem;
+    border-radius: 20px;
+    width: 400px;
+    height: 550px;
+    pointer-events: auto; /* Ensure form elements are clickable */
   }
 
   .modal-body {
@@ -195,28 +230,233 @@
     padding: 0;
   }
 
+  .registration-form {
+    margin: 0;
+    padding: 0;
+  }
+
   /* Ensure inputs don't cause overflow */
   .form-control {
     max-height: 45px;
     margin-bottom: 0.5rem;
   }
   .input-box {
+    position: relative;
+    width: 100%;
+    height: 50px;
+    border-bottom: 2px solid #162938;
+    margin: 11px 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
+  .input-box label {
+    position: absolute;
+    top: 50%;
+    left: 5px;;
+    transform: translateY(-50%);
+    font-size: 1em;
+    color: #162938;
+    font-weight: 400;
+    pointer-events: none;
+    transition: .5s;
+      }
+
+
+  .input-box input:focus~label,
+  .input-box input:valid~label {
+   top: -3px;
+  }
+
+.input-box input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1em;
+  color: #162938;
+  font-weight: 600;
+  padding: 0 35px 0 5px;
+}
+
+.input-box i {
+  position: absolute;
+  right: 8px;
+  font-size: 1.2em;
+  color: #162938;
+  line-height: 57px;
+}
+
+.remember-forgot {
+  font-size: .9em;
+  color: #162938;
+  font-weight: 500;
+  margin: 0px 0 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.remember-forgot label input{
+  accent-color: #162938;
+  margin-right: 3px;
+}
+
+.remember-forgot a {
+  color: #162938;
+  text-decoration: none ;
+}
+
+.remember-forgot a:hover {
+  text-decoration: underline; 
+}
+
+.remember-forgot-registration {
+  font-size: 1em;
+  color: #162938;
+  font-weight: 500;
+  margin: 6px 0 18px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.remember-forgot-registration label input{
+  accent-color: #162938;
+  margin-right: 3px;
+}
+
+
+.btn-login {
+  width: 100%;
+  height: 45px;
+  background: #162938;
+  border: none;
+  outline: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #fff;
+  font-weight: 500;
+}
+
+.btn-register {
+  width: 100%;
+  height: 45px;
+  background: #162938;
+  border: none;
+  outline: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #fff;
+  font-weight: 500;
+}
+
+.login-register {
+  font-size: .9em;
+  color: #162938;
+  text-align: center;
+  font-weight: 500;
+  margin: 15px 0 5px;
+}
+.login-register p a{
+  color: #162938;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-register p a:hover {
+  text-decoration: underline;
+}
+
   /* Mobile optimization */
   @media (max-width: 768px) {
     .modal-dialog {
-      margin: 1rem;
       width: calc(100% - 2rem);
     }
     
     .modal-content {
       padding: 1rem;
     }
+
+    .modal-content-registration {
+      padding: 1rem;
+    }
   }
+
+  .remember-forgot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .remember-forgot label {
+    display: flex;
+    align-items: center;
+    gap: 3px; /* Space between checkbox and text */
+  }
+
+  input[type="checkbox"] {
+    transform: scale(1.3); /* Increase checkbox size */
+    cursor: pointer;
+  }
+
+  .remember-forgot-registration {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .remember-forgot-registration label {
+    display: flex;
+    align-items: center;
+    gap: 3px; /* Space between checkbox and text */
+  }
+
+  .remember-forgot-registration input[type="checkbox"] {
+    transform: scale(1.55); /* Increase checkbox size */
+    cursor: pointer;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  .modal-content .icon-close  {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 45px;
+    height: 45px;
+    background: #162938;
+    font-size: 1.5em;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom-left-radius: 20px;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .modal-content-registration .icon-close  {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 45px;
+    height: 45px;
+    background: #162938;
+    font-size: 1.5em;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom-left-radius: 20px;
+    cursor: pointer;
+    z-index: 1;
+  }
+
 </style>
       
   </head>
@@ -235,12 +475,12 @@
   <div class="container-fluid">
     <div class="position-absolute top-0 end-0 mt-2  d-flex">
       <!-- Login Button -->
-      <button class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#authModal">
+      <button class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#login">
         <i class="fas fa-sign-in-alt"></i> Login
       </button>
 
       <!-- Register Button -->
-      <button class="btn btn-primary btn-sm me-3" data-bs-toggle="modal" data-bs-target="#authModal">
+      <button class="btn btn-primary btn-sm me-3" data-bs-toggle="modal" data-bs-target="#register">
         <i class="fa-solid fa-pen-to-square"></i> Register
       </button>
     </div>
@@ -249,47 +489,88 @@
 
 
 <!-- Authentication Modal -->
- <!-- To show easy to modify ---   <div class="modal show" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
-  <div class="modal" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
-   <!-- To hide and clickable ---   <div class="modal" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
+ <!-- To show easy to modify ---   <div class="modal show" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
+  <div class="modal" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+   <!-- To hide and clickable ---   <div class="modal" id="login" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content mb-5">
-       <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
-       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-       <!-- To hide and clickable ---   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
-      <div class="modal-header">
-        <h3 class="modal-title">Login</h3>
-      </div>
-
-      <div class="modal-body">
+       <span class="icon-close">
+          <i class="fa-solid fa-xmark" data-bs-dismiss="modal" aria-label="Close"></i>
+            <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
+          <!-- <button type="button" class="btn-close" aria-label="Close"></button> -->
+          <!-- To hide and clickable ---   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
+        </span>
         <form class="login-form">
-          <div class="mb-3 input-box">
-            <span>
-              <i class="fa-solid fa-envelope"></i>
-            </span>
-
-            <label for="name" class="form-label">Name</label>
-            <input type="text" class="form-control" id="name" placeholder="Enter your name">
+          <h2 class="modal-title mt-3 mb-1">Login</h2>
+          <div class="input-box">
+            <i class="fa-solid fa-envelope"></i>
+            <input type="email" id="name" required>
+            <label>Email</label>
           </div>
-          <div class="mb-3">
+          <div class="input-box">
             <i class="fa-solid fa-lock"></i>
-            <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" placeholder="Enter your password">
+            <input type="password"  id="password" required>
+            <label>Password</label>
           </div>
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="remember">
-              <label class="form-check-label" for="remember">Remember me</label>
-            </div>
-            <a href="register.php" class="text-primary text-decoration-none">Forgot Password?</a>
+          <div class="remember-forgot">
+              <label> <input type="checkbox" id="remember">Remember me</label>
+              <a href="#" >Forgot Password?</a>        
           </div>
-          <button type="submit" class="btn btn-primary w-100 mb-3">Submit</button>
-          <p class="text-center mb-0">Don't have an account? <a href="register.php" class="text-primary text-decoration-none">Register</a></p>
+          <button type="login" class="btn-login">Login</button>
+          <div class="login-register">
+            <p>Don't have an account? <a href="#" class="register-link">Register</a></p>
+          </div>
+          
         </form>
-      </div>
     </div>
   </div>
 </div>
+
+
+ <!-- To show easy to modify ---   <div class="modal show" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="false" style="display: block;"> -->
+  <div class="modal" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+  <!-- To hide and clickable ---   <div class="modal" id="register" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true"> -->
+ <div class="modal-dialog modal-dialog-centered">
+   <div class="modal-content-registration mb-5">
+      <span class="icon-close">
+         <i class="fa-solid fa-xmark" data-bs-dismiss="modal" aria-label="Close" ></i>
+           <!-- To show easy to modify ---   <button type="button" class="btn-close" aria-label="Close"></button> -->
+         <!-- <button type="button" class="btn-close" aria-label="Close"></button> -->
+         <!-- To hide and clickable ---   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
+       </span>
+       <form class="registration-form">
+         <h2 class="modal-title mt-3 mb-1">Registration</h2>
+         <div class="input-box">
+          <i class="fa-solid fa-user"></i>
+           <input type="text" id="username" required>
+           <label>Username</label>
+         </div>
+         <div class="input-box">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" id="name" required>
+          <label>Email</label>
+        </div>
+         <div class="input-box">
+           <i class="fa-solid fa-lock"></i>
+           <input type="password"  id="password" required>
+           <label>Password</label>
+         </div>
+         <div class="remember-forgot-registration">
+             <label> <input type="checkbox" id="remember">I agree to the terms & conditions</label>
+         </div>
+         <button type="register" class="btn-register">Register</button>
+         <div class="login-register">
+           <p>Already have an account ? <a href="#" class="login-link">Login</a></p>
+         </div>
+         
+       </form>
+   </div>
+ </div>
+</div>
+
+
+
+
 
     <div id="map"></div>
     <script src="rsc/js/streetlight_queries.js"></script>
@@ -297,13 +578,16 @@
     <script src="rsc/bootstrap/apexcharts/apexcharts.js"></script>
     <script src="rsc/bootstrap/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="rsc/js/localforage.min.js"></script>
+    <script src="rsc/js/login-registration.js"></script>
     
 
     <script>
+
       let streetlightMap;
       document.addEventListener("DOMContentLoaded", async () => {
         if (!streetlightMap) {
           streetlightMap = new StreetlightMap();
+          window.streetlightMap = streetlightMap; // Make it globally accessible
           // Wait for initialization to complete
           await new Promise((resolve) => setTimeout(resolve, 100));
           if (streetlightMap.map) {

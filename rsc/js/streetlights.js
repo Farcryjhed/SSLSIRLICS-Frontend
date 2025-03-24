@@ -26,6 +26,13 @@ class StreetlightMap {
     // Manage tile cache periodically
     this.manageTileCache();
     setInterval(() => this.manageTileCache(), 3600000); // Clean cache every hour
+
+    this.isLoggedIn = false; // Add this line
+  }
+
+  // Add method to check login status
+  checkLoginStatus() {
+    return localStorage.getItem('isLoggedIn') === 'true';
   }
 
   setupMap() {
@@ -426,6 +433,8 @@ class StreetlightMap {
           navigator.userAgent
         );
 
+      const isLoggedIn = this.checkLoginStatus();
+
       for (const province in this.coordinates) {
         const data = this.coordinates[province];
 
@@ -435,51 +444,54 @@ class StreetlightMap {
           data.municipalities &&
           Object.keys(data.municipalities).length > 0
         ) {
-          const marker = L.marker([data.lat, data.long], {
-            icon: L.divIcon({
-              className: "custom-marker",
-              html: '<i class="fas fa-building text-primary fa-3x"></i>',
-              iconSize: [40, 40],
-              iconAnchor: [20, 40],
-            }),
-          });
-
-          const popupContent = await this.createProvincePopup({
-            name: province,
-            code: data.province_code,
-          });
-
-          marker.bindPopup(popupContent);
-
-          const handleMarkerClick = () => {
-            this.disableAllGeoJsonInteractions(); // Call function instead of manual hiding
-            this.provinceMarkers.removeLayer(marker);
-            this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
-            this.showMunicipalityMarkers(province);
-          };
-
-          if (isMobile) {
-            marker.on("popupopen", (e) => {
-              const zoomButton =
-                e.popup._contentNode.querySelector(".zoom-to-province");
-              if (zoomButton) {
-                zoomButton.addEventListener("click", handleMarkerClick);
-              }
+          // Only create marker if user is logged in
+          if (isLoggedIn) {
+            const marker = L.marker([data.lat, data.long], {
+              icon: L.divIcon({
+                className: "custom-marker",
+                html: '<i class="fas fa-building text-primary fa-3x"></i>',
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+              }),
             });
-          } else {
-            marker.on("click", handleMarkerClick);
 
-            // Show popup on hover for desktop
-            const popup = L.popup({
-              closeButton: false,
-              offset: [0, -20],
-            }).setContent(popupContent);
-            marker.on("mouseover", () => marker.openPopup());
-            marker.on("mouseout", () => marker.closePopup());
-            marker.bindPopup(popup);
+            const popupContent = await this.createProvincePopup({
+              name: province,
+              code: data.province_code,
+            });
+
+            marker.bindPopup(popupContent);
+
+            const handleMarkerClick = () => {
+              this.disableAllGeoJsonInteractions(); // Call function instead of manual hiding
+              this.provinceMarkers.removeLayer(marker);
+              this.map.flyTo([data.lat, data.long], this.zoomLevels.city);
+              this.showMunicipalityMarkers(province);
+            };
+
+            if (isMobile) {
+              marker.on("popupopen", (e) => {
+                const zoomButton =
+                  e.popup._contentNode.querySelector(".zoom-to-province");
+                if (zoomButton) {
+                  zoomButton.addEventListener("click", handleMarkerClick);
+                }
+              });
+            } else {
+              marker.on("click", handleMarkerClick);
+
+              // Show popup on hover for desktop
+              const popup = L.popup({
+                closeButton: false,
+                offset: [0, -20],
+              }).setContent(popupContent);
+              marker.on("mouseover", () => marker.openPopup());
+              marker.on("mouseout", () => marker.closePopup());
+              marker.bindPopup(popup);
+            }
+
+            this.provinceMarkers.addLayer(marker);
           }
-
-          this.provinceMarkers.addLayer(marker);
         }
       }
 
@@ -2945,6 +2957,19 @@ class StreetlightMap {
         });
       });
     });
+  }
+
+  // Add method to update markers visibility
+  updateMarkersVisibility() {
+    const isLoggedIn = this.checkLoginStatus();
+    
+    if (this.provinceMarkers) {
+      if (isLoggedIn) {
+        this.addProvinceMarkers(); // Re-add markers if logged in
+      } else {
+        this.provinceMarkers.clearLayers(); // Remove all markers if logged out
+      }
+    }
   }
 } // End of StreetlightMap class
 
